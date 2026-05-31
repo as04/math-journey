@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>2×2 Matrix as a Transformation — Math Journey</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body>
+  <main class="container">
+    <a class="back" href="../index.html">← back to lessons</a>
+    <h1>A 2×2 Matrix is a Transformation of the Plane</h1>
+    <p class="tagline">Phase 1. The 3Blue1Brown view, interactively. Change the matrix, watch space warp.</p>
+
+    <div class="panel">
+      <canvas id="canvas" width="640" height="640" style="width:100%; max-width:640px; margin: 0 auto;"></canvas>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">The matrix</h3>
+      <p class="muted" style="margin-top:0">Edit the four entries. The transformed basis vectors are the <span style="color:#7cc4ff">blue (î)</span> and <span style="color:#ff7a7a">red (ĵ)</span> arrows.</p>
+      <div style="display: grid; grid-template-columns: auto auto auto auto; gap: 8px 14px; align-items: center; max-width: 380px; margin: 0 auto;">
+        <span class="mono muted">a =</span><input id="a" type="number" step="0.1" value="1" />
+        <span class="mono muted">b =</span><input id="b" type="number" step="0.1" value="0" />
+        <span class="mono muted">c =</span><input id="c" type="number" step="0.1" value="0" />
+        <span class="mono muted">d =</span><input id="d" type="number" step="0.1" value="1" />
+      </div>
+      <p class="mono center" style="font-size:1.1rem;">
+        M = [[<span id="da">1</span>, <span id="db">0</span>], [<span id="dc">0</span>, <span id="dd">1</span>]]
+      </p>
+
+      <div class="row" style="justify-content:center;">
+        <button class="secondary" data-preset="identity">identity</button>
+        <button class="secondary" data-preset="rot30">rotate 30°</button>
+        <button class="secondary" data-preset="rot90">rotate 90°</button>
+        <button class="secondary" data-preset="scale2">scale 2×</button>
+        <button class="secondary" data-preset="shear">shear</button>
+        <button class="secondary" data-preset="reflectx">reflect x</button>
+        <button class="secondary" data-preset="proj">project onto x</button>
+        <button class="secondary" data-preset="random">random</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">What the matrix is telling you</h3>
+      <table style="width:100%">
+        <tr>
+          <th>quantity</th>
+          <th>value</th>
+          <th>geometric meaning</th>
+        </tr>
+        <tr>
+          <td class="mono">det(M)</td>
+          <td class="mono" id="det">1</td>
+          <td>signed area-scaling factor. Negative = orientation flipped. Zero = collapses to a line.</td>
+        </tr>
+        <tr>
+          <td class="mono">trace(M) = a + d</td>
+          <td class="mono" id="trace">2</td>
+          <td>sum of eigenvalues.</td>
+        </tr>
+        <tr>
+          <td class="mono">eigenvalues</td>
+          <td class="mono" id="eigs">1, 1</td>
+          <td>scaling factors along the special "eigen-directions."</td>
+        </tr>
+        <tr>
+          <td class="mono">eigenvectors</td>
+          <td class="mono" id="eigv">any</td>
+          <td>directions that don't change direction under M (drawn as dashed yellow lines if real).</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">The intuitions to lock in</h3>
+      <ol>
+        <li>A matrix takes î = (1,0) to the first column, and ĵ = (0,1) to the second column. Everything else is determined by linearity.</li>
+        <li><strong>det(M) is how much area scales.</strong> Type [[2,0],[0,3]] and watch the unit square become a 2×3 rectangle, area 6. Type [[1,1],[0,1]] (shear) — area stays 1.</li>
+        <li><strong>det(M) = 0 means the transformation crushes the plane onto a line.</strong> Try [[1,2],[2,4]]. There is no inverse — you can't undo a crush.</li>
+        <li><strong>Eigenvectors</strong> are the directions where the transformation acts like a simple stretch. Try [[2,0],[0,0.5]] — î stretches by 2, ĵ shrinks by 0.5. Both are eigenvectors.</li>
+        <li><strong>A rotation has complex eigenvalues</strong> — there's no real direction that's unchanged. Try rotate 30° — eigenvalues complex, no real eigen-lines.</li>
+      </ol>
+    </div>
+
+    <div class="hint">
+      <strong>Self-test:</strong> Before computing, predict the determinant of <span class="mono">[[1,2],[3,4]]</span>. Then type it in. Was your sign right? (Answer below.) Determinant = <span class="mono">1·4 − 2·3 = −2</span>. Negative → orientation flipped.
+    </div>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const canvas = $('canvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const SCALE = 50; // pixels per unit
+    const cx = W / 2, cy = H / 2;
+
+    function toScreen(x, y) {
+      return [cx + x * SCALE, cy - y * SCALE];
+    }
+
+    function getMatrix() {
+      return {
+        a: parseFloat($('a').value) || 0,
+        b: parseFloat($('b').value) || 0,
+        c: parseFloat($('c').value) || 0,
+        d: parseFloat($('d').value) || 0,
+      };
+    }
+
+    function apply(M, x, y) {
+      return [M.a * x + M.b * y, M.c * x + M.d * y];
+    }
+
+    function eigStuff(M) {
+      const { a, b, c, d } = M;
+      const tr = a + d;
+      const det = a * d - b * c;
+      const disc = tr * tr - 4 * det;
+      let eigs, eigv;
+      if (disc >= 0) {
+        const s = Math.sqrt(disc);
+        const l1 = (tr + s) / 2;
+        const l2 = (tr - s) / 2;
+        eigs = [l1, l2];
+        // eigenvector for lambda: if b≠0 → [b, λ-a]; else if c≠0 → [λ-d, c]; else [1,0]/[0,1]
+        const evec = (lam) => {
+          if (Math.abs(b) > 1e-9) return [b, lam - a];
+          if (Math.abs(c) > 1e-9) return [lam - d, c];
+          // diagonal — pick standard basis
+          if (Math.abs(lam - a) < 1e-9) return [1, 0];
+          return [0, 1];
+        };
+        eigv = [evec(l1), evec(l2)];
+      } else {
+        const re = tr / 2;
+        const im = Math.sqrt(-disc) / 2;
+        eigs = [{ re, im }, { re, im: -im }];
+        eigv = null; // no real eigenvectors
+      }
+      return { tr, det, eigs, eigv };
+    }
+
+    function drawGrid(M) {
+      ctx.clearRect(0, 0, W, H);
+
+      // background original grid (faint)
+      ctx.strokeStyle = '#2a2f3a';
+      ctx.lineWidth = 1;
+      const range = 8;
+      for (let i = -range; i <= range; i++) {
+        ctx.beginPath();
+        const [x1, y1] = toScreen(i, -range);
+        const [x2, y2] = toScreen(i, range);
+        ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+        ctx.stroke();
+        ctx.beginPath();
+        const [x3, y3] = toScreen(-range, i);
+        const [x4, y4] = toScreen(range, i);
+        ctx.moveTo(x3, y3); ctx.lineTo(x4, y4);
+        ctx.stroke();
+      }
+
+      // transformed grid (brighter)
+      ctx.strokeStyle = '#3d6080';
+      ctx.lineWidth = 1;
+      for (let i = -range; i <= range; i++) {
+        // vertical line x = i transformed: from (i,-range) to (i,range)
+        ctx.beginPath();
+        const p1 = apply(M, i, -range);
+        const p2 = apply(M, i, range);
+        const [sx1, sy1] = toScreen(p1[0], p1[1]);
+        const [sx2, sy2] = toScreen(p2[0], p2[1]);
+        ctx.moveTo(sx1, sy1); ctx.lineTo(sx2, sy2);
+        ctx.stroke();
+        // horizontal line y = i
+        ctx.beginPath();
+        const q1 = apply(M, -range, i);
+        const q2 = apply(M, range, i);
+        const [tx1, ty1] = toScreen(q1[0], q1[1]);
+        const [tx2, ty2] = toScreen(q2[0], q2[1]);
+        ctx.moveTo(tx1, ty1); ctx.lineTo(tx2, ty2);
+        ctx.stroke();
+      }
+
+      // axes
+      ctx.strokeStyle = '#9aa0aa';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(0, cy); ctx.lineTo(W, cy);
+      ctx.moveTo(cx, 0); ctx.lineTo(cx, H);
+      ctx.stroke();
+
+      // transformed unit square (shaded)
+      const [ix, iy] = apply(M, 1, 0);
+      const [jx, jy] = apply(M, 0, 1);
+      const o = toScreen(0, 0);
+      const i_ = toScreen(ix, iy);
+      const ij = toScreen(ix + jx, iy + jy);
+      const j_ = toScreen(jx, jy);
+      ctx.fillStyle = 'rgba(124, 196, 255, 0.18)';
+      ctx.beginPath();
+      ctx.moveTo(...o); ctx.lineTo(...i_); ctx.lineTo(...ij); ctx.lineTo(...j_);
+      ctx.closePath();
+      ctx.fill();
+
+      // eigenvector lines (if real)
+      const info = eigStuff(M);
+      if (info.eigv) {
+        ctx.setLineDash([6, 6]);
+        ctx.strokeStyle = '#ffb86b';
+        ctx.lineWidth = 1.5;
+        info.eigv.forEach((v) => {
+          const norm = Math.hypot(v[0], v[1]);
+          if (norm < 1e-9) return;
+          const scl = 20 / norm;
+          const p1 = toScreen(-v[0] * scl, -v[1] * scl);
+          const p2 = toScreen(v[0] * scl, v[1] * scl);
+          ctx.beginPath();
+          ctx.moveTo(...p1); ctx.lineTo(...p2);
+          ctx.stroke();
+        });
+        ctx.setLineDash([]);
+      }
+
+      // basis arrows (transformed)
+      drawArrow(0, 0, ix, iy, '#7cc4ff', 'î');
+      drawArrow(0, 0, jx, jy, '#ff7a7a', 'ĵ');
+    }
+
+    function drawArrow(x1, y1, x2, y2, color, label) {
+      const [sx1, sy1] = toScreen(x1, y1);
+      const [sx2, sy2] = toScreen(x2, y2);
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(sx1, sy1);
+      ctx.lineTo(sx2, sy2);
+      ctx.stroke();
+      // arrowhead
+      const ang = Math.atan2(sy2 - sy1, sx2 - sx1);
+      const ah = 10;
+      ctx.beginPath();
+      ctx.moveTo(sx2, sy2);
+      ctx.lineTo(sx2 - ah * Math.cos(ang - 0.4), sy2 - ah * Math.sin(ang - 0.4));
+      ctx.lineTo(sx2 - ah * Math.cos(ang + 0.4), sy2 - ah * Math.sin(ang + 0.4));
+      ctx.closePath();
+      ctx.fill();
+      ctx.font = '600 14px monospace';
+      ctx.fillText(label, sx2 + 8, sy2 - 6);
+    }
+
+    function fmt(n) {
+      if (typeof n === 'object') {
+        const sign = n.im >= 0 ? '+' : '−';
+        return `${n.re.toFixed(2)} ${sign} ${Math.abs(n.im).toFixed(2)}i`;
+      }
+      return Number(n).toFixed(2);
+    }
+
+    function update() {
+      const M = getMatrix();
+      $('da').textContent = M.a; $('db').textContent = M.b;
+      $('dc').textContent = M.c; $('dd').textContent = M.d;
+      drawGrid(M);
+      const info = eigStuff(M);
+      $('det').textContent = fmt(info.det);
+      $('trace').textContent = fmt(info.tr);
+      $('eigs').textContent = info.eigs.map(fmt).join(', ');
+      if (info.eigv) {
+        $('eigv').textContent = info.eigv
+          .map((v) => `(${v[0].toFixed(2)}, ${v[1].toFixed(2)})`)
+          .join('  ;  ');
+      } else {
+        $('eigv').textContent = 'complex — no real eigen-direction';
+      }
+    }
+
+    function setMatrix(a, b, c, d) {
+      $('a').value = a; $('b').value = b;
+      $('c').value = c; $('d').value = d;
+      update();
+    }
+
+    const presets = {
+      identity: [1, 0, 0, 1],
+      rot30: () => {
+        const t = Math.PI / 6;
+        return [Math.cos(t), -Math.sin(t), Math.sin(t), Math.cos(t)];
+      },
+      rot90: [0, -1, 1, 0],
+      scale2: [2, 0, 0, 2],
+      shear: [1, 1, 0, 1],
+      reflectx: [1, 0, 0, -1],
+      proj: [1, 0, 0, 0],
+      random: () => [randR(), randR(), randR(), randR()],
+    };
+    function randR() { return Math.round((Math.random() * 4 - 2) * 10) / 10; }
+
+    document.querySelectorAll('[data-preset]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const p = presets[btn.dataset.preset];
+        const vals = typeof p === 'function' ? p() : p;
+        setMatrix(...vals);
+      });
+    });
+
+    ['a', 'b', 'c', 'd'].forEach((id) => {
+      $(id).addEventListener('input', update);
+    });
+
+    update();
+  </script>
+</body>
+</html>

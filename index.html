@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Math Journey — Lesson Hub</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="container">
+    <h1>Math Journey</h1>
+    <p class="tagline">Rebuilding math fluency, from arithmetic to MSc-level intuition. Interactive lessons, in your browser, no install.</p>
+
+    <p>
+      Start with the <a href="README.md">README</a> and the <a href="ROADMAP.md">full roadmap</a>.
+      The phase plans go from <a href="PHASE-0-arithmetic.md">Phase 0 (arithmetic)</a> through
+      <a href="PHASE-5-lifelong.md">Phase 5 (lifelong practice)</a>.
+    </p>
+
+    <h2>Lessons</h2>
+    <p class="muted">These are starter lessons demonstrating the format. More to come — add your own as you learn each topic.</p>
+
+    <div class="grid">
+
+      <div class="card">
+        <a href="lessons/arithmetic-drill.html">
+          <div class="meta"><span class="phase-pill">Phase 0</span> mental math</div>
+          <h3>Arithmetic drill</h3>
+          <p class="desc">Daily 5–10 minute mental-math reps with adjustable difficulty. The single most important habit in this curriculum.</p>
+        </a>
+      </div>
+
+      <div class="card">
+        <a href="lessons/linear-algebra-transformations.html">
+          <div class="meta"><span class="phase-pill">Phase 1</span> linear algebra</div>
+          <h3>2×2 matrix as a transformation</h3>
+          <p class="desc">Type a matrix, watch the plane warp. Determinant, eigenvectors, presets — the 3Blue1Brown view, interactively.</p>
+        </a>
+      </div>
+
+      <div class="card">
+        <a href="lessons/lp-visualizer.html">
+          <div class="meta"><span class="phase-pill">Phase 2</span> optimization</div>
+          <h3>Linear &amp; integer programming</h3>
+          <p class="desc">A 2D LP you can poke. Drag constraints, change the objective, toggle integer mode and see the MILP/LP gap.</p>
+        </a>
+      </div>
+
+    </div>
+
+    <h2>How to contribute a lesson</h2>
+    <p>
+      Every lesson is a single self-contained HTML file in <code class="mono">lessons/</code> that links
+      <code class="mono">../styles.css</code>. No build step, no frameworks. The pattern is:
+    </p>
+    <ol>
+      <li>One concept per lesson.</li>
+      <li>A picture (canvas or SVG) at the top.</li>
+      <li>Controls (sliders, inputs, buttons) that visibly change the picture.</li>
+      <li>A short explanation underneath — enough to read in five minutes.</li>
+      <li>Self-test or self-check at the bottom.</li>
+    </ol>
+    <p>Copy any existing lesson as a template. Open it in your browser to iterate. Push to git. Done.</p>
+
+  </main>
+</body>
+</html>

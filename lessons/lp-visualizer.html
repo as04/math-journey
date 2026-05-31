@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LP &amp; MILP Visualizer — Math Journey</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body>
+  <main class="container">
+    <a class="back" href="../index.html">← back to lessons</a>
+    <h1>Linear &amp; Integer Programming, Visualized</h1>
+    <p class="tagline">Phase 2. A 2-variable LP you can poke. Toggle the integer constraint to see the MILP/LP gap appear.</p>
+
+    <div class="panel">
+      <canvas id="canvas" width="640" height="640" style="width:100%; max-width:640px; margin: 0 auto;"></canvas>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">The problem</h3>
+      <p class="mono" style="font-size:1.05rem;">
+        maximize&nbsp; <span id="objstr">3·x + 2·y</span><br>
+        subject to:<br>
+        &nbsp;&nbsp;<span id="c1str">2·x + 1·y ≤ 8</span><br>
+        &nbsp;&nbsp;<span id="c2str">1·x + 3·y ≤ 12</span><br>
+        &nbsp;&nbsp;x, y ≥ 0
+      </p>
+      <p class="row" style="gap: 18px;">
+        <label class="mono"><input type="checkbox" id="integer" /> integer variables only (MILP)</label>
+        <button class="secondary" id="reset">reset problem</button>
+      </p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Coefficients</h3>
+      <div class="controls">
+        <label>objective c₁ (×x)</label>
+        <input type="range" id="c1" min="-5" max="5" step="0.1" value="3" />
+        <span class="val" id="c1v">3.0</span>
+
+        <label>objective c₂ (×y)</label>
+        <input type="range" id="c2" min="-5" max="5" step="0.1" value="2" />
+        <span class="val" id="c2v">2.0</span>
+
+        <label>constraint 1: a₁₁</label>
+        <input type="range" id="a11" min="-3" max="5" step="0.1" value="2" />
+        <span class="val" id="a11v">2.0</span>
+
+        <label>constraint 1: a₁₂</label>
+        <input type="range" id="a12" min="-3" max="5" step="0.1" value="1" />
+        <span class="val" id="a12v">1.0</span>
+
+        <label>constraint 1: b₁</label>
+        <input type="range" id="b1" min="0" max="20" step="0.5" value="8" />
+        <span class="val" id="b1v">8.0</span>
+
+        <label>constraint 2: a₂₁</label>
+        <input type="range" id="a21" min="-3" max="5" step="0.1" value="1" />
+        <span class="val" id="a21v">1.0</span>
+
+        <label>constraint 2: a₂₂</label>
+        <input type="range" id="a22" min="-3" max="5" step="0.1" value="3" />
+        <span class="val" id="a22v">3.0</span>
+
+        <label>constraint 2: b₂</label>
+        <input type="range" id="b2" min="0" max="20" step="0.5" value="12" />
+        <span class="val" id="b2v">12.0</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Solution</h3>
+      <table style="width:100%">
+        <tr>
+          <th></th><th>x*</th><th>y*</th><th>objective</th>
+        </tr>
+        <tr>
+          <td class="mono">LP (continuous)</td>
+          <td class="mono" id="lpx">—</td>
+          <td class="mono" id="lpy">—</td>
+          <td class="mono" id="lpz">—</td>
+        </tr>
+        <tr id="milprow" style="display:none">
+          <td class="mono">MILP (integers)</td>
+          <td class="mono" id="ix">—</td>
+          <td class="mono" id="iy">—</td>
+          <td class="mono" id="iz">—</td>
+        </tr>
+        <tr id="gaprow" style="display:none">
+          <td class="mono">LP − MILP gap</td>
+          <td></td><td></td>
+          <td class="mono" id="gap">—</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Reading the picture</h3>
+      <ul>
+        <li><strong>Each constraint</strong> is a straight line; the feasible side is shaded.</li>
+        <li>The <strong>feasible region</strong> (where all constraints overlap) is the dark teal polygon.</li>
+        <li>The <strong>orange dashed lines</strong> are level sets of the objective. They march in the direction of increase.</li>
+        <li>The LP optimum sits at a <strong>vertex</strong> of the polygon. (Fundamental theorem of LP.)</li>
+        <li>In <strong>integer mode</strong>, the green dots are the feasible lattice points. The MILP optimum is the one with the highest objective — often <em>not</em> the LP optimum rounded.</li>
+      </ul>
+      <p class="hint">
+        <strong>Try this:</strong> with default settings, LP optimum is at (2.4, 3.2) with objective 13.6. Flip integer mode — MILP optimum is at (3, 2) with objective 13. The gap is 0.6. <em>Notice that (3, 2) is not what you'd get by simply rounding (2.4, 3.2).</em> This is the whole reason MILP needs special algorithms — you can't just solve the LP and round.
+      </p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Why this matters</h3>
+      <p>Real-world decision problems live in MILP-shaped space: scheduling, routing, packing, assignment, facility location. The integers represent <em>discrete choices</em> ("build the warehouse or don't"; "assign worker to shift or don't"). The LP relaxation gives you a lower bound; the gap to the MILP optimum is sometimes small, sometimes huge.</p>
+      <p>Branch-and-bound, the standard MILP algorithm, works by solving LP relaxations of restricted problems — splitting on fractional variables. Modern solvers (Gurobi, CPLEX, HiGHS, CBC) are extraordinarily good at this. They routinely solve problems with millions of variables.</p>
+      <p>Phase 2 reading: H. Paul Williams, <em>Model Building in Mathematical Programming</em> — the bible on <em>how to formulate</em>, which is the actual hard skill.</p>
+    </div>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const canvas = $('canvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const PAD = 40;
+    const PLOT = W - 2 * PAD; // = 560
+    const RANGE = 11; // 0..11 plotted
+    const UNIT = PLOT / RANGE;
+
+    const toScreen = (x, y) => [PAD + x * UNIT, H - PAD - y * UNIT];
+
+    function getProblem() {
+      const flds = ['c1','c2','a11','a12','b1','a21','a22','b2'];
+      const v = {};
+      flds.forEach((id) => { v[id] = parseFloat($(id).value); });
+      return v;
+    }
+
+    // returns intersection of two lines a1 x + b1 y = c1 and a2 x + b2 y = c2, or null if parallel
+    function intersect(a1, b1, c1, a2, b2, c2) {
+      const det = a1 * b2 - a2 * b1;
+      if (Math.abs(det) < 1e-12) return null;
+      return [(c1 * b2 - c2 * b1) / det, (a1 * c2 - a2 * c1) / det];
+    }
+
+    function isFeasible(x, y, p, eps = 1e-7) {
+      if (x < -eps || y < -eps) return false;
+      if (p.a11 * x + p.a12 * y > p.b1 + eps) return false;
+      if (p.a21 * x + p.a22 * y > p.b2 + eps) return false;
+      return true;
+    }
+
+    function computeFeasibleVertices(p) {
+      // candidate constraint lines: x=0, y=0, c1, c2
+      // represented as (a, b, c) for a x + b y = c (boundary case of ≤)
+      const lines = [
+        [1, 0, 0],            // x = 0
+        [0, 1, 0],            // y = 0
+        [p.a11, p.a12, p.b1], // c1
+        [p.a21, p.a22, p.b2], // c2
+      ];
+      const verts = [];
+      for (let i = 0; i < lines.length; i++) {
+        for (let j = i + 1; j < lines.length; j++) {
+          const pt = intersect(...lines[i], ...lines[j]);
+          if (!pt) continue;
+          if (!isFinite(pt[0]) || !isFinite(pt[1])) continue;
+          if (isFeasible(pt[0], pt[1], p)) {
+            // dedupe
+            if (!verts.some(v => Math.hypot(v[0]-pt[0], v[1]-pt[1]) < 1e-6))
+              verts.push(pt);
+          }
+        }
+      }
+      // sort by angle around centroid
+      if (verts.length < 3) return verts;
+      const cx = verts.reduce((s,v)=>s+v[0],0) / verts.length;
+      const cy = verts.reduce((s,v)=>s+v[1],0) / verts.length;
+      verts.sort((u,v) => Math.atan2(u[1]-cy, u[0]-cx) - Math.atan2(v[1]-cy, v[0]-cx));
+      return verts;
+    }
+
+    function lpOptimum(p, verts) {
+      if (!verts.length) return null;
+      let best = verts[0];
+      let bz = p.c1 * best[0] + p.c2 * best[1];
+      for (const v of verts) {
+        const z = p.c1 * v[0] + p.c2 * v[1];
+        if (z > bz) { bz = z; best = v; }
+      }
+      return { x: best[0], y: best[1], z: bz };
+    }
+
+    function milpOptimum(p) {
+      let best = null, bz = -Infinity;
+      const pts = [];
+      for (let x = 0; x <= RANGE; x++) {
+        for (let y = 0; y <= RANGE; y++) {
+          if (!isFeasible(x, y, p)) continue;
+          pts.push([x, y]);
+          const z = p.c1 * x + p.c2 * y;
+          if (z > bz) { bz = z; best = [x, y]; }
+        }
+      }
+      return { points: pts, best, bz };
+    }
+
+    function drawAxes() {
+      ctx.clearRect(0, 0, W, H);
+      // grid
+      ctx.strokeStyle = '#2a2f3a';
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= RANGE; i++) {
+        ctx.beginPath();
+        const [x1, y1] = toScreen(i, 0);
+        const [x2, y2] = toScreen(i, RANGE);
+        ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+        ctx.beginPath();
+        const [x3, y3] = toScreen(0, i);
+        const [x4, y4] = toScreen(RANGE, i);
+        ctx.moveTo(x3, y3); ctx.lineTo(x4, y4); ctx.stroke();
+      }
+      // axes
+      ctx.strokeStyle = '#9aa0aa';
+      ctx.lineWidth = 1.5;
+      const [ox, oy] = toScreen(0, 0);
+      ctx.beginPath();
+      ctx.moveTo(ox, oy); ctx.lineTo(...toScreen(RANGE, 0)); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(ox, oy); ctx.lineTo(...toScreen(0, RANGE)); ctx.stroke();
+      // tick labels
+      ctx.fillStyle = '#9aa0aa';
+      ctx.font = '11px monospace';
+      for (let i = 1; i <= RANGE; i += 2) {
+        const [sx, sy] = toScreen(i, 0);
+        ctx.fillText(i, sx - 4, sy + 14);
+        const [sx2, sy2] = toScreen(0, i);
+        ctx.fillText(i, sx2 - 18, sy2 + 4);
+      }
+      ctx.fillStyle = '#e8eaee';
+      ctx.font = '600 13px monospace';
+      ctx.fillText('x', W - PAD + 6, H - PAD + 4);
+      ctx.fillText('y', PAD - 6, PAD - 8);
+    }
+
+    function drawConstraintLine(a, b, c, color) {
+      // line a x + b y = c, draw within [0, RANGE]²
+      const pts = [];
+      if (Math.abs(b) > 1e-9) {
+        // y at x=0 and x=RANGE
+        pts.push([0, c / b]);
+        pts.push([RANGE, (c - a * RANGE) / b]);
+      } else if (Math.abs(a) > 1e-9) {
+        pts.push([c / a, 0]);
+        pts.push([c / a, RANGE]);
+      } else return;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(...toScreen(pts[0][0], pts[0][1]));
+      ctx.lineTo(...toScreen(pts[1][0], pts[1][1]));
+      ctx.stroke();
+    }
+
+    function drawFeasible(verts) {
+      if (!verts.length) return;
+      ctx.fillStyle = 'rgba(110, 231, 163, 0.18)';
+      ctx.strokeStyle = '#6ee7a3';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(...toScreen(verts[0][0], verts[0][1]));
+      for (let i = 1; i < verts.length; i++) ctx.lineTo(...toScreen(verts[i][0], verts[i][1]));
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    function drawObjectiveContours(p, optZ) {
+      if (!isFinite(optZ)) return;
+      ctx.setLineDash([5, 5]);
+      ctx.strokeStyle = '#ffb86b';
+      ctx.lineWidth = 1.2;
+      const levels = [0.25, 0.5, 0.75, 1.0, 1.25];
+      for (const k of levels) {
+        const z = optZ * k;
+        drawConstraintLine(p.c1, p.c2, z, '#ffb86b');
+      }
+      ctx.setLineDash([]);
+      // objective vector arrow at origin, scaled
+      const norm = Math.hypot(p.c1, p.c2);
+      if (norm > 1e-9) {
+        const scale = 2 / norm;
+        const ex = p.c1 * scale, ey = p.c2 * scale;
+        ctx.strokeStyle = '#ffb86b';
+        ctx.fillStyle = '#ffb86b';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        const [sx, sy] = toScreen(0.2, 0.2);
+        const [ex2, ey2] = toScreen(0.2 + ex, 0.2 + ey);
+        ctx.moveTo(sx, sy); ctx.lineTo(ex2, ey2); ctx.stroke();
+        // arrowhead
+        const ang = Math.atan2(ey2 - sy, ex2 - sx);
+        const ah = 9;
+        ctx.beginPath();
+        ctx.moveTo(ex2, ey2);
+        ctx.lineTo(ex2 - ah * Math.cos(ang - 0.4), ey2 - ah * Math.sin(ang - 0.4));
+        ctx.lineTo(ex2 - ah * Math.cos(ang + 0.4), ey2 - ah * Math.sin(ang + 0.4));
+        ctx.closePath();
+        ctx.fill();
+        ctx.font = '600 11px monospace';
+        ctx.fillText('∇z', ex2 + 6, ey2 - 4);
+      }
+    }
+
+    function drawDot(x, y, color, r) {
+      const [sx, sy] = toScreen(x, y);
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(sx, sy, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function update() {
+      const p = getProblem();
+
+      // update slider readouts
+      ['c1','c2','a11','a12','b1','a21','a22','b2'].forEach((id) => {
+        $(id + 'v').textContent = Number(p[id]).toFixed(1);
+      });
+
+      // problem statement
+      $('objstr').textContent = `${p.c1.toFixed(1)}·x + ${p.c2.toFixed(1)}·y`;
+      $('c1str').textContent = `${p.a11.toFixed(1)}·x + ${p.a12.toFixed(1)}·y ≤ ${p.b1.toFixed(1)}`;
+      $('c2str').textContent = `${p.a21.toFixed(1)}·x + ${p.a22.toFixed(1)}·y ≤ ${p.b2.toFixed(1)}`;
+
+      drawAxes();
+
+      const verts = computeFeasibleVertices(p);
+      drawFeasible(verts);
+
+      // constraint lines
+      drawConstraintLine(p.a11, p.a12, p.b1, '#7cc4ff');
+      drawConstraintLine(p.a21, p.a22, p.b2, '#c47cff');
+
+      const lp = lpOptimum(p, verts);
+      if (lp) {
+        drawObjectiveContours(p, lp.z);
+        // LP optimum: large circle
+        drawDot(lp.x, lp.y, '#ff7a7a', 9);
+        ctx.fillStyle = '#ff7a7a';
+        ctx.font = '600 13px monospace';
+        const [sx, sy] = toScreen(lp.x, lp.y);
+        ctx.fillText(`LP* (${lp.x.toFixed(2)}, ${lp.y.toFixed(2)})`, sx + 12, sy - 8);
+        $('lpx').textContent = lp.x.toFixed(3);
+        $('lpy').textContent = lp.y.toFixed(3);
+        $('lpz').textContent = lp.z.toFixed(3);
+      } else {
+        $('lpx').textContent = '—'; $('lpy').textContent = '—'; $('lpz').textContent = 'infeasible';
+      }
+
+      const intMode = $('integer').checked;
+      $('milprow').style.display = intMode ? '' : 'none';
+      $('gaprow').style.display = intMode ? '' : 'none';
+      if (intMode) {
+        const mi = milpOptimum(p);
+        // draw all feasible integer points
+        for (const [x, y] of mi.points) {
+          drawDot(x, y, '#6ee7a3', 4);
+        }
+        if (mi.best) {
+          drawDot(mi.best[0], mi.best[1], '#6ee7a3', 10);
+          // ring around it
+          ctx.strokeStyle = '#6ee7a3';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          const [sx, sy] = toScreen(mi.best[0], mi.best[1]);
+          ctx.arc(sx, sy, 14, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.fillStyle = '#6ee7a3';
+          ctx.font = '600 13px monospace';
+          ctx.fillText(`MILP* (${mi.best[0]}, ${mi.best[1]})`, sx + 18, sy + 18);
+          $('ix').textContent = mi.best[0];
+          $('iy').textContent = mi.best[1];
+          $('iz').textContent = mi.bz.toFixed(3);
+          if (lp) {
+            const gap = lp.z - mi.bz;
+            $('gap').textContent = gap.toFixed(3);
+          }
+        } else {
+          $('ix').textContent = '—'; $('iy').textContent = '—'; $('iz').textContent = 'no feasible int';
+        }
+      }
+    }
+
+    function resetProblem() {
+      const def = { c1:3, c2:2, a11:2, a12:1, b1:8, a21:1, a22:3, b2:12 };
+      Object.keys(def).forEach(k => { $(k).value = def[k]; });
+      $('integer').checked = false;
+      update();
+    }
+
+    ['c1','c2','a11','a12','b1','a21','a22','b2'].forEach((id) => {
+      $(id).addEventListener('input', update);
+    });
+    $('integer').addEventListener('change', update);
+    $('reset').addEventListener('click', resetProblem);
+
+    update();
+  </script>
+</body>
+</html>

@@ -1,0 +1,196 @@
+:root {
+  --bg: #0f1115;
+  --panel: #181b22;
+  --panel-2: #1f232c;
+  --border: #2a2f3a;
+  --text: #e8eaee;
+  --muted: #9aa0aa;
+  --accent: #7cc4ff;
+  --accent-2: #ffb86b;
+  --good: #6ee7a3;
+  --bad: #ff7a7a;
+  --mono: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  --sans: -apple-system, system-ui, "Inter", Helvetica, Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  line-height: 1.55;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.container {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+
+h1, h2, h3 { line-height: 1.25; font-weight: 600; }
+h1 { font-size: 2.1rem; margin-bottom: 0.2em; }
+h2 { font-size: 1.4rem; margin-top: 2em; border-bottom: 1px solid var(--border); padding-bottom: 0.3em; }
+h3 { font-size: 1.1rem; color: var(--accent); }
+
+.tagline {
+  color: var(--muted);
+  font-size: 1.05rem;
+  margin-top: 0;
+  margin-bottom: 1.5em;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  margin: 24px 0;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 20px;
+  transition: transform 0.1s ease, border-color 0.1s ease;
+}
+.card:hover { transform: translateY(-2px); border-color: var(--accent); }
+.card a { display: block; }
+.card h3 { margin: 0 0 6px 0; }
+.card .meta {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+.card .desc { color: var(--text); font-size: 0.92rem; margin: 0; }
+
+.phase-pill {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  background: var(--panel-2);
+  color: var(--accent);
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  margin-right: 6px;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px;
+  margin: 16px 0;
+}
+
+button {
+  background: var(--accent);
+  color: #0a0d12;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: filter 0.1s ease;
+}
+button:hover { filter: brightness(1.1); }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+button.secondary {
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+input[type="number"], input[type="text"], select {
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-family: var(--mono);
+  font-size: 0.95rem;
+}
+input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.row > * { flex-shrink: 0; }
+
+.kbd {
+  font-family: var(--mono);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+
+.muted { color: var(--muted); }
+.mono { font-family: var(--mono); }
+.center { text-align: center; }
+
+.big {
+  font-size: 2rem;
+  font-family: var(--mono);
+}
+
+.score { color: var(--good); }
+.error { color: var(--bad); }
+
+.problem {
+  font-family: var(--mono);
+  font-size: 2.6rem;
+  text-align: center;
+  margin: 18px 0;
+  letter-spacing: 0.05em;
+}
+
+canvas {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: block;
+}
+
+.back {
+  display: inline-block;
+  margin-bottom: 18px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+table { border-collapse: collapse; margin: 12px 0; }
+th, td { padding: 6px 12px; border: 1px solid var(--border); text-align: left; }
+th { background: var(--panel-2); color: var(--accent); font-weight: 600; }
+
+.hint {
+  background: var(--panel-2);
+  border-left: 3px solid var(--accent-2);
+  padding: 10px 14px;
+  border-radius: 0 6px 6px 0;
+  margin: 12px 0;
+  font-size: 0.92rem;
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 8px 14px;
+  align-items: center;
+  margin: 8px 0;
+}
+.controls label { font-family: var(--mono); font-size: 0.9rem; color: var(--muted); }
+.controls .val { font-family: var(--mono); color: var(--accent); min-width: 60px; text-align: right; }

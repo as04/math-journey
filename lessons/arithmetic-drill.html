@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Arithmetic Drill — Math Journey</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body>
+  <main class="container">
+    <a class="back" href="../index.html">← back to lessons</a>
+    <h1>Arithmetic Drill</h1>
+    <p class="tagline">Phase 0. Ten minutes a day. No exceptions.</p>
+
+    <div class="panel">
+      <div class="row" style="justify-content: space-between;">
+        <div class="row">
+          <label class="mono muted">Operation</label>
+          <select id="op">
+            <option value="mix">mix</option>
+            <option value="add">+ addition</option>
+            <option value="sub">− subtraction</option>
+            <option value="mul" selected>× multiplication</option>
+            <option value="sq">x² squaring</option>
+          </select>
+          <label class="mono muted">Difficulty</label>
+          <select id="diff">
+            <option value="1">1-digit</option>
+            <option value="2" selected>2-digit</option>
+            <option value="2x1">2 × 1-digit</option>
+            <option value="3x2">3 × 2-digit</option>
+            <option value="3">3-digit</option>
+          </select>
+        </div>
+        <div class="row">
+          <button id="reset" class="secondary">reset stats</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel center">
+      <div class="problem" id="problem">…</div>
+      <div class="row" style="justify-content: center;">
+        <input id="answer" type="text" inputmode="numeric" autocomplete="off" autofocus
+               style="font-size: 1.6rem; width: 180px; text-align: center;" />
+        <button id="submit">submit (↵)</button>
+        <button id="skip" class="secondary">skip</button>
+      </div>
+      <div class="row" style="justify-content: center; margin-top: 14px; gap: 24px;">
+        <div><span class="muted mono">streak</span> <span class="big score" id="streak">0</span></div>
+        <div><span class="muted mono">total</span> <span class="big" id="total">0</span></div>
+        <div><span class="muted mono">accuracy</span> <span class="big" id="acc">—</span></div>
+        <div><span class="muted mono">avg time</span> <span class="big" id="avgtime">—</span></div>
+      </div>
+      <div id="feedback" class="mono" style="margin-top: 8px; height: 1.4em;"></div>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">The cross-multiplication trick (Vedic Urdhva-Tiryagbhyam)</h3>
+      <p>For two-digit × two-digit, e.g. <span class="mono">23 × 41</span>:</p>
+      <ul>
+        <li><strong>Right column:</strong> <span class="mono">3 × 1 = 3</span> → ones digit.</li>
+        <li><strong>Cross:</strong> <span class="mono">2×1 + 3×4 = 14</span> → tens digit, carry 1.</li>
+        <li><strong>Left column:</strong> <span class="mono">2 × 4 = 8</span>, plus carry <span class="mono">1 = 9</span> → hundreds digit.</li>
+        <li>Result: <span class="mono">943</span>.</li>
+      </ul>
+      <p class="muted">Slow for the first three days. Automatic by day ten. Trust it.</p>
+
+      <h3>Squaring near 100 (or 50)</h3>
+      <ul>
+        <li><span class="mono">97² = (100−3)² = (100−2·3) | 3² = 94 | 09 = 9409</span>.</li>
+        <li><span class="mono">53² = (50+3)² = (25+3) | 3² = 28 | 09 = 2809</span>.</li>
+      </ul>
+
+      <h3>Left-to-right addition</h3>
+      <p>For <span class="mono">347 + 286</span>: do hundreds first, then tens, then ones — exactly how you say the number.<br/>
+         <span class="mono">300+200 = 500</span>, <span class="mono">40+80 = 120</span> → <span class="mono">620</span>, <span class="mono">7+6 = 13</span> → <span class="mono">633</span>.</p>
+      <p class="muted">Faster, fewer errors, and partial sums are useful for estimation.</p>
+    </div>
+
+    <div class="hint">
+      <strong>How to use this page:</strong> set difficulty, hit submit (or Enter) after each answer. Aim for 30 problems in your daily session. Track your streak. After 4 weeks of this, two-digit multiplication will be effortless again.
+    </div>
+  </main>
+
+  <script>
+    const STORAGE_KEY = 'math-journey-arith-stats';
+    const $ = (id) => document.getElementById(id);
+
+    let state = {
+      streak: 0, total: 0, correct: 0, totalTimeMs: 0,
+      currentAnswer: null, startTime: null,
+    };
+
+    // restore stats
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      Object.assign(state, saved, { currentAnswer: null, startTime: null });
+    } catch (_) {}
+
+    function persist() {
+      const { streak, total, correct, totalTimeMs } = state;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ streak, total, correct, totalTimeMs }));
+    }
+
+    function randInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function range(diff) {
+      // returns [min, max] for the operand range
+      switch (diff) {
+        case '1':   return [2, 9];
+        case '2':   return [10, 99];
+        case '2x1': return [10, 99]; // and second op 2-9
+        case '3x2': return [100, 999];
+        case '3':   return [100, 999];
+        default:    return [10, 99];
+      }
+    }
+
+    function nextProblem() {
+      const op = $('op').value;
+      const diff = $('diff').value;
+      const [lo, hi] = range(diff);
+      let a = randInt(lo, hi);
+      let b = randInt(lo, hi);
+      if (diff === '2x1') b = randInt(2, 9);
+      if (diff === '3x2') b = randInt(10, 99);
+
+      let chosenOp = op;
+      if (op === 'mix') {
+        chosenOp = ['add', 'sub', 'mul'][randInt(0, 2)];
+      }
+
+      let answer, display;
+      switch (chosenOp) {
+        case 'add':
+          answer = a + b;
+          display = `${a} + ${b}`;
+          break;
+        case 'sub':
+          if (b > a) [a, b] = [b, a];
+          answer = a - b;
+          display = `${a} − ${b}`;
+          break;
+        case 'mul':
+          answer = a * b;
+          display = `${a} × ${b}`;
+          break;
+        case 'sq':
+          answer = a * a;
+          display = `${a}²`;
+          break;
+      }
+
+      state.currentAnswer = answer;
+      state.startTime = performance.now();
+      $('problem').textContent = display;
+      $('answer').value = '';
+      $('answer').focus();
+      $('feedback').textContent = '';
+    }
+
+    function fmtTime(ms) {
+      if (ms == null || isNaN(ms)) return '—';
+      const s = ms / 1000;
+      return s < 10 ? s.toFixed(1) + 's' : Math.round(s) + 's';
+    }
+
+    function render() {
+      $('streak').textContent = state.streak;
+      $('total').textContent = state.total;
+      $('acc').textContent = state.total
+        ? Math.round(100 * state.correct / state.total) + '%' : '—';
+      $('avgtime').textContent = state.correct
+        ? fmtTime(state.totalTimeMs / state.correct) : '—';
+    }
+
+    function submit() {
+      const raw = $('answer').value.trim();
+      if (raw === '') return;
+      const userAns = parseInt(raw, 10);
+      if (isNaN(userAns)) return;
+
+      const elapsed = performance.now() - state.startTime;
+      state.total++;
+      if (userAns === state.currentAnswer) {
+        state.streak++;
+        state.correct++;
+        state.totalTimeMs += elapsed;
+        $('feedback').innerHTML = `<span class="score">✓ correct · ${fmtTime(elapsed)}</span>`;
+      } else {
+        $('feedback').innerHTML = `<span class="error">✗ ${state.currentAnswer} · streak reset</span>`;
+        state.streak = 0;
+      }
+      persist();
+      render();
+      setTimeout(nextProblem, 600);
+    }
+
+    function skip() {
+      $('feedback').innerHTML = `<span class="muted">skipped · was ${state.currentAnswer}</span>`;
+      state.streak = 0;
+      persist();
+      render();
+      setTimeout(nextProblem, 600);
+    }
+
+    function reset() {
+      if (!confirm('Reset all stats?')) return;
+      state.streak = 0;
+      state.total = 0;
+      state.correct = 0;
+      state.totalTimeMs = 0;
+      persist();
+      render();
+      nextProblem();
+    }
+
+    $('submit').addEventListener('click', submit);
+    $('skip').addEventListener('click', skip);
+    $('reset').addEventListener('click', reset);
+    $('answer').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') submit();
+    });
+    $('op').addEventListener('change', nextProblem);
+    $('diff').addEventListener('change', nextProblem);
+
+    render();
+    nextProblem();
+  </script>
+</body>
+</html>
