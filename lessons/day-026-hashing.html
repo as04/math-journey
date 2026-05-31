@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Day 26 — Hashing &amp; Dictionaries</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="../assets/lesson.js"></script>
+</head>
+<body>
+  <main class="container">
+
+    <div class="panel">
+      <h3 style="margin-top:0">Track C: the workhorse of every interview</h3>
+      <p>If sorting is the most-asked algorithm in interviews, hash tables are the most-used data structure. Half of LeetCode problems can be solved in one pass with a dictionary. Every modern programming language ships with one built in (<code class="mono">dict</code>, <code class="mono">HashMap</code>, etc.) — but if you don't understand <em>how</em> they work, you'll miss when they fail.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">The basic idea</h3>
+      <ol>
+        <li>You have a key (string, number, anything hashable).</li>
+        <li>A <strong>hash function</strong> turns the key into an integer h.</li>
+        <li>That integer mod table-size gives you an index in an array.</li>
+        <li>You store the (key, value) pair at that index.</li>
+        <li>Lookup: hash the key, go to that index, find the value. <strong>O(1) on average.</strong></li>
+      </ol>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">The complication: collisions</h3>
+      <p>Two different keys can hash to the same index. That's a collision. Two main strategies:</p>
+      <ul>
+        <li><strong>Separate chaining:</strong> each array slot holds a list of (key, value) pairs. Look up the key by scanning the list. Python's <code class="mono">dict</code>: open addressing variant; Java's <code class="mono">HashMap</code>: chaining.</li>
+        <li><strong>Open addressing:</strong> if your slot is taken, try the next one (linear probing) or another deterministic offset (quadratic, double hashing). More cache-friendly, but trickier to delete.</li>
+      </ul>
+      <p>When the table fills up (load factor &gt; ~0.75), it's <strong>resized</strong> — usually doubled — and all keys re-hashed. This is the amortized "occasionally O(n)" step that keeps average operations O(1).</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Complexity, the honest table</h3>
+      <table style="width:100%">
+        <tr><th>operation</th><th>average</th><th>worst case</th></tr>
+        <tr><td>insert</td><td class="mono">O(1)</td><td class="mono">O(n) — bad hashing or adversarial keys</td></tr>
+        <tr><td>lookup</td><td class="mono">O(1)</td><td class="mono">O(n)</td></tr>
+        <tr><td>delete</td><td class="mono">O(1)</td><td class="mono">O(n)</td></tr>
+        <tr><td>resize (occasional)</td><td class="mono">O(n) amortized = O(1) per op</td><td class="mono">O(n)</td></tr>
+      </table>
+      <p><em>Worst-case O(n) is rare with good hash functions on real data. But beware: adversarial inputs (someone constructing keys to all collide) can degrade a hash table to a linked list. This is a real security issue called "hash flooding" — modern languages defend with randomized hash seeds.</em></p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Interactive: watch a hash table fill up</h3>
+      <p>Insert keys. The widget shows the array, where each key lands (via a simple hash function), and which slots collide. Add 20+ keys to see chains form.</p>
+
+      <div class="row">
+        <label class="mono">key</label>
+        <input type="text" id="key" placeholder="any string" style="width: 140px;">
+        <button id="insert">insert</button>
+        <button id="reset" class="secondary">reset</button>
+        <button id="rand" class="secondary">+ 5 random keys</button>
+      </div>
+
+      <p class="muted" style="margin-top: 8px;">table size: <span id="tsize" class="mono">11</span> · load factor: <span id="loadF" class="mono">0/11 = 0.00</span></p>
+
+      <div id="table" style="display: grid; grid-template-columns: repeat(11, 1fr); gap: 4px; margin-top: 12px;"></div>
+
+      <p class="muted" style="margin-top: 12px;">hash function used: <span class="mono">sum of char codes mod 11</span> (intentionally simple — real hashes are much better)</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">The interview-pattern unlock</h3>
+      <p>Whenever you see a problem of the form <em>"find pairs / find duplicates / count occurrences / check membership in a stream"</em>, your first thought should be <strong>hash map</strong>. It usually turns an O(n²) brute-force search into O(n) by precomputing a lookup.</p>
+      <p>Classic example — "two sum" (find two numbers in a list that sum to target):</p>
+      <pre class="mono" style="background:var(--panel-2); padding: 12px; border-radius: 6px;">def two_sum(nums, target):
+    seen = {}
+    for i, x in enumerate(nums):
+        if target - x in seen:
+            return seen[target - x], i
+        seen[x] = i
+    return None
+</pre>
+      <p>O(n) time, O(n) space. Brute force is O(n²). The hash map is the entire trick.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Exercises</h3>
+      <div id="exercises"></div>
+    </div>
+
+  </main>
+
+  <script>
+    Lesson.init({ id: 'day-026', day: 26, title: 'Hashing & Dictionaries', estMin: 30 });
+
+    const $ = id => document.getElementById(id);
+    const SIZE = 11;
+    let table = Array.from({ length: SIZE }, () => []);
+
+    function simpleHash(key) {
+      let h = 0;
+      for (const ch of key) h += ch.charCodeAt(0);
+      return h % SIZE;
+    }
+
+    function renderTable() {
+      const cont = $('table');
+      cont.innerHTML = '';
+      for (let i = 0; i < SIZE; i++) {
+        const cell = document.createElement('div');
+        cell.style.background = table[i].length === 0 ? 'var(--panel-2)' :
+                                  table[i].length === 1 ? 'rgba(110, 231, 163, 0.25)' :
+                                  'rgba(255, 184, 107, 0.30)';
+        cell.style.border = '1px solid var(--border)';
+        cell.style.borderRadius = '4px';
+        cell.style.padding = '6px';
+        cell.style.minHeight = '50px';
+        cell.style.fontSize = '0.75rem';
+        cell.style.fontFamily = 'monospace';
+        cell.innerHTML = `<div style="color: var(--muted);">[${i}]</div>${table[i].map(k => `<div>${k}</div>`).join('')}`;
+        cont.appendChild(cell);
+      }
+      const total = table.reduce((s, c) => s + c.length, 0);
+      $('loadF').textContent = `${total}/${SIZE} = ${(total/SIZE).toFixed(2)}`;
+    }
+
+    $('insert').addEventListener('click', () => {
+      const k = $('key').value.trim();
+      if (!k) return;
+      const idx = simpleHash(k);
+      if (!table[idx].includes(k)) table[idx].push(k);
+      $('key').value = '';
+      renderTable();
+    });
+    $('key').addEventListener('keydown', e => { if (e.key === 'Enter') $('insert').click(); });
+    $('reset').addEventListener('click', () => {
+      table = Array.from({ length: SIZE }, () => []);
+      renderTable();
+    });
+    $('rand').addEventListener('click', () => {
+      const words = ['apple','banana','cherry','dog','elephant','fox','grape','hat','ice','jelly','kite','lion','melon','nest','orange','pear','quack','rose','sun','tree','umbrella','violet','wave','xray','yarn','zebra'];
+      for (let i = 0; i < 5; i++) {
+        const k = words[Math.floor(Math.random() * words.length)];
+        const idx = simpleHash(k);
+        if (!table[idx].includes(k)) table[idx].push(k);
+      }
+      renderTable();
+    });
+    renderTable();
+
+    Exercises.render($('exercises'), [
+      {
+        q: "Average-case complexity of hash-table lookup?",
+        type: 'mcq',
+        options: ['O(log n)', 'O(1)', 'O(n)', 'O(n log n)'],
+        answer: 1,
+        explain: 'O(1) on average, assuming a good hash function and low load factor. This is the whole point of hash tables — constant-time lookup.',
+      },
+      {
+        q: "Worst-case complexity of hash-table lookup?",
+        type: 'mcq',
+        options: ['O(1)', 'O(log n)', 'O(n)', 'O(n²)'],
+        answer: 2,
+        explain: 'O(n). If all keys hash to the same bucket (terrible hashing or adversarial input), you\'re scanning a linear list. In practice this almost never happens with good hashing on random data.',
+      },
+      {
+        q: "Two-sum (find indices of two numbers summing to target) can be done in:",
+        type: 'mcq',
+        options: ['O(n) using a hash map', 'O(n²) and no faster', 'O(log n)', 'O(1)'],
+        answer: 0,
+        explain: 'One pass with a hash map storing "values I\'ve seen and their indices." O(n) time, O(n) space. The most-asked entry-level interview problem.',
+      },
+      {
+        q: "When the load factor of a hash table exceeds ~0.75:",
+        type: 'mcq',
+        options: [
+          'Performance is unaffected.',
+          'The table is usually resized (often doubled) and all keys re-hashed.',
+          'It crashes.',
+          'You should switch to a binary tree.',
+        ],
+        answer: 1,
+        explain: 'Resize keeps average O(1) operations. The resize step itself is O(n), but it\'s amortized over the n insertions that filled the table, so per-op cost stays O(1).',
+      },
+      {
+        q: "Python\'s dict implementation uses:",
+        type: 'mcq',
+        options: ['Separate chaining', 'Open addressing with probing', 'A binary tree', 'A linked list'],
+        answer: 1,
+        explain: 'CPython uses open addressing with a deterministic probe sequence. Modern Python\'s dict is also order-preserving (since 3.7) — preserving insertion order is a separate property from the hash table mechanism.',
+      },
+    ]);
+  </script>
+</body>
+</html>

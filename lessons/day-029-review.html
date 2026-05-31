@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Day 29 — Month 1 Review: Re-Derive 5 Key Results</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="../assets/lesson.js"></script>
+</head>
+<body>
+  <main class="container">
+
+    <div class="panel">
+      <h3 style="margin-top:0">The honest check</h3>
+      <p>You've worked through 28 lessons. Today: pick up a blank piece of paper and re-derive five key results <em>from memory</em>, no notes. If you can, the knowledge is yours. If you can't on some, that tells you exactly what to revisit before moving to Month 2.</p>
+      <p>This is the highest-return activity in the entire curriculum. <strong>Re-derivation reveals what you've actually internalized vs. what just felt familiar.</strong> Most people are shocked the first time they try this — and rebuilt by the third.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">The five re-derivations</h3>
+
+      <h4>1. Chain rule</h4>
+      <p>From the limit definition <span class="mono">h'(x) = lim (h(x+δ) − h(x))/δ</span>, derive <span class="mono">d/dx[f(g(x))] = f'(g(x)) · g'(x)</span>.</p>
+      <p class="muted">Hint: multiply numerator and denominator by (g(x+δ) − g(x)). Day 21.</p>
+
+      <h4>2. Bayes' theorem</h4>
+      <p>From the definition of conditional probability, derive <span class="mono">P(A|B) = P(B|A) · P(A) / P(B)</span>.</p>
+      <p class="muted">Hint: two ways of writing P(A ∩ B). Day 10.</p>
+
+      <h4>3. Normal equations for linear regression</h4>
+      <p>Starting from <span class="mono">L(β) = (1/n) · ‖y − Xβ‖²</span>, derive <span class="mono">β* = (XᵀX)⁻¹Xᵀy</span>.</p>
+      <p class="muted">Hint: expand the squared norm, take gradient w.r.t. β, set to zero. Day 24.</p>
+
+      <h4>4. Variance from two algebraic forms</h4>
+      <p>Show that <span class="mono">Var(X) = E[(X−μ)²] = E[X²] − (E[X])²</span>.</p>
+      <p class="muted">Hint: expand the square, use linearity of expectation, recognize E[X] = μ. Day 12.</p>
+
+      <h4>5. Dot product = |u||v|cosθ</h4>
+      <p>For vectors u, v in ℝ², show that <span class="mono">u·v = u₁v₁ + u₂v₂ = |u| · |v| · cos(θ)</span> where θ is the angle between them.</p>
+      <p class="muted">Hint: write u and v in polar form (|u|cosα, |u|sinα), use angle-difference identity for cosine. Day 3.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">The process — strict</h3>
+      <ol>
+        <li>For each result, give yourself <strong>15 minutes</strong>. No notes. No lookups.</li>
+        <li>If you can write it cleanly: <em>nailed it.</em></li>
+        <li>If you get stuck in the middle: write down where you got stuck. <strong>That's the gap.</strong></li>
+        <li>Only after attempting all 5, look up the proofs from the relevant day's lesson.</li>
+        <li>Whatever was hardest, that's your priority for the first week of Month 2 — re-do that lesson's exercises slowly.</li>
+      </ol>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Quick-check exercises</h3>
+      <p>After your paper attempt, these are spot-checks for the most important facts. If any of these aren't instant, that's a Month-2 priority.</p>
+      <div id="exercises"></div>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">If you're solid on all 5...</h3>
+      <p>You've earned Month 1. Pick a hard Project Euler problem you haven't seen (say #4 — largest palindrome product, or #7 — 10,001st prime) and solve it before tomorrow. Then tomorrow we plan Month 2.</p>
+    </div>
+
+  </main>
+
+  <script>
+    Lesson.init({ id: 'day-029', day: 29, title: 'Month 1 Review', estMin: 40 });
+
+    Exercises.render(document.getElementById('exercises'), [
+      {
+        q: "Derivative of f(x) = sin(2x² + 1) at x = 0?",
+        type: 'numeric', answer: 0, tol: 0.001,
+        explain: 'd/dx[sin(2x²+1)] = cos(2x²+1) · 4x. At x = 0: cos(1) · 0 = 0. Chain rule.',
+      },
+      {
+        q: "P(disease) = 0.02, P(positive test | disease) = 0.95, P(positive test | no disease) = 0.05. P(disease | positive)?",
+        type: 'numeric', answer: 0.279, tol: 0.005,
+        explain: 'P(D|+) = 0.95·0.02 / (0.95·0.02 + 0.05·0.98) = 0.019 / 0.068 ≈ 0.279. Bayes\' theorem.',
+      },
+      {
+        q: "Linear regression on n data points. The closed-form solution requires solving a system involving which matrix?",
+        type: 'mcq',
+        options: ['X⁻¹', 'XᵀX', 'XXᵀ', 'I'],
+        answer: 1,
+        explain: 'Solve (XᵀX)β = Xᵀy. The matrix XᵀX is (d×d) and almost always invertible when n > d with non-degenerate features.',
+      },
+      {
+        q: "Var(2X + 5) in terms of Var(X)?",
+        type: 'mcq',
+        options: [
+          '2·Var(X) + 5',
+          '2·Var(X)',
+          '4·Var(X)',
+          '4·Var(X) + 25',
+        ],
+        answer: 2,
+        explain: 'Var(aX + b) = a² Var(X). Shift (the +5) doesn\'t affect spread; scale (the 2) gets squared. So 4·Var(X). The +5 contributes nothing.',
+      },
+      {
+        q: "Dot product of (3, 4) and (1, 0)?",
+        type: 'numeric', answer: 3, tol: 0,
+        explain: '3·1 + 4·0 = 3. Geometrically: |u||v|cosθ — (3,4) has magnitude 5, (1,0) has magnitude 1, the angle is arctan(4/3) ≈ 53°, cos(53°) ≈ 0.6, and 5·1·0.6 = 3. Both views agree.',
+      },
+      {
+        q: "Big-O of binary search on n items?",
+        type: 'mcq',
+        options: ['O(1)', 'O(log n)', 'O(n)', 'O(n log n)'],
+        answer: 1,
+        explain: 'O(log n). Each step halves the search space.',
+      },
+      {
+        q: "If learning rate is too high in gradient descent, the loss curve:",
+        type: 'mcq',
+        options: [
+          'Decreases smoothly.',
+          'Stays flat.',
+          'Oscillates or diverges (increases).',
+          'Goes to zero immediately.',
+        ],
+        answer: 2,
+        explain: 'Each step overshoots the minimum, often landing higher than start. Visually: zig-zag widening, or monotone divergence.',
+      },
+    ]);
+  </script>
+</body>
+</html>

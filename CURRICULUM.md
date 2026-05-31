@@ -119,29 +119,29 @@ After 12 months of this regime + applying actively, you have a realistic shot at
 
 ### Week 3 — Linear algebra deeper + calculus restart + recursion
 
-| Day | Title |
-|---|---|
-| 15 | Vector spaces, basis, dimension |
-| 16 | Linear combinations & span |
-| 17 | Solving Ax = b — what it means |
-| 18 | Determinant — area/volume scaling |
-| 19 | Limits & rate of change |
-| 20 | Recursion + first DP problem (Track C focus) |
-| 21 | Chain rule — derive it |
+| Day | Title | Tracks | Status |
+|---|---|---|---|
+| 15 | Vector spaces, basis, dimension | A, B | ✅ built |
+| 16 | Linear combinations & span | A, B | ✅ built |
+| 17 | Solving Ax = b | A, B | ✅ built |
+| 18 | Determinant — area/volume scaling | A, B | ✅ built |
+| 19 | Limits & rate of change | A, B | ✅ built |
+| 20 | Recursion + first DP problem | A, C | ✅ built |
+| 21 | Chain rule | A, B | ✅ built |
 
 ### Week 4 — Putting it together: first ML math + first portfolio commit
 
-| Day | Title |
-|---|---|
-| 22 | Gradient: direction of steepest ascent |
-| 23 | Gradient descent — by hand, then NumPy |
-| 24 | Linear regression from scratch — Part 1 (the math) |
-| 25 | Linear regression from scratch — Part 2 (the code) |
-| 26 | Hashing & dictionaries (Track C: SWE staple) |
-| 27 | Cross-validation — why and how |
-| 28 | **Month 1 capstone** — push your linear-regression repo + write README |
-| 29 | Month 1 review — re-derive 5 key results |
-| 30 | Plan Month 2: pick your next side project |
+| Day | Title | Tracks | Status |
+|---|---|---|---|
+| 22 | Gradient: direction of steepest ascent | A, B | ✅ built |
+| 23 | Gradient descent | A, B | ✅ built |
+| 24 | Linear regression Part 1 (the math) | A, B | ✅ built |
+| 25 | Linear regression Part 2 (the code) | A, B, D | ✅ built |
+| 26 | Hashing & dictionaries | A, C | ✅ built |
+| 27 | Cross-validation | A, B | ✅ built |
+| 28 | **Month 1 capstone** — push your repo | A, D | ✅ built |
+| 29 | Month 1 review — re-derive 5 key results | A, B | ✅ built |
+| 30 | Plan Month 2 | A | ✅ built |
 
 ---
 

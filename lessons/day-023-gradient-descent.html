@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Day 23 — Gradient Descent</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="../assets/lesson.js"></script>
+</head>
+<body>
+  <main class="container">
+
+    <div class="panel">
+      <h3 style="margin-top:0">The single algorithm that powers all of ML</h3>
+      <p>Yesterday: the gradient ∇f points in the direction of steepest ascent. Today: if we want to <em>minimize</em> f, we move in the opposite direction. Repeatedly. That's gradient descent.</p>
+      <p class="mono center" style="font-size: 1.15rem;">x_{t+1} = x_t − η · ∇f(x_t)</p>
+      <p>where η ("eta") is the <strong>learning rate</strong> — how big a step you take. Almost every deep learning paper ever written uses some variant of this.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Three things go wrong</h3>
+      <ol>
+        <li><strong>Learning rate too small:</strong> you crawl. Converges, but takes forever.</li>
+        <li><strong>Learning rate too large:</strong> you overshoot and bounce around — or diverge entirely.</li>
+        <li><strong>Stuck in local minima or saddle points:</strong> for non-convex functions (which is every interesting ML loss), GD can get trapped. Variants like momentum, Adam, etc. help.</li>
+      </ol>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Interactive: optimize on a 2D loss surface</h3>
+      <p>Pick a starting point and a learning rate. Hit "step" repeatedly to take one GD step at a time, or "run" to watch the full trajectory. Try learning rate 0.5 vs 0.01 vs 1.1 on the bowl — feel how it matters.</p>
+
+      <div class="row">
+        <label class="mono">f(x, y) =</label>
+        <select id="fn">
+          <option value="bowl">x² + y² (bowl)</option>
+          <option value="quad">x² + 5y² (elongated bowl)</option>
+          <option value="banana">Rosenbrock — (1-x)² + 5(y-x²)²</option>
+        </select>
+      </div>
+
+      <canvas id="canvas" width="500" height="500" style="width:100%; max-width:500px; margin: 12px auto;"></canvas>
+
+      <div class="controls">
+        <label>learning rate η</label>
+        <input type="range" id="lr" min="0.001" max="1.2" step="0.001" value="0.1">
+        <span class="val" id="lrv">0.100</span>
+      </div>
+
+      <div class="row" style="margin-top: 10px;">
+        <button id="step">step</button>
+        <button id="run10">run 10 steps</button>
+        <button id="run100">run 100 steps</button>
+        <button id="reset" class="secondary">reset to random start</button>
+      </div>
+
+      <table style="width:100%; margin-top: 14px;">
+        <tr><th>quantity</th><th>value</th></tr>
+        <tr><td>steps taken</td><td class="mono" id="nsteps">0</td></tr>
+        <tr><td>current point</td><td class="mono" id="pt">—</td></tr>
+        <tr><td>f at current point</td><td class="mono" id="fv">—</td></tr>
+        <tr><td>‖∇f‖ (distance from local optimum signal)</td><td class="mono" id="gm">—</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">The modern variants (preview)</h3>
+      <ul>
+        <li><strong>Stochastic gradient descent (SGD):</strong> use a random subset of data for each step. Faster per step, noisier.</li>
+        <li><strong>Momentum:</strong> add a fraction of the previous step. Smooths out the trajectory.</li>
+        <li><strong>Adam:</strong> SGD + momentum + per-parameter learning rate. The default optimizer for most deep learning. You'll meet it in Month 3.</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Implementation, in 8 lines of Python</h3>
+      <pre class="mono" style="background:var(--panel-2); padding: 12px; border-radius: 6px;">def gradient_descent(grad_fn, start, lr, n_steps):
+    x = start[:]
+    for _ in range(n_steps):
+        g = grad_fn(x)
+        for i in range(len(x)):
+            x[i] -= lr * g[i]
+    return x
+
+# usage on f(x, y) = x² + y²:
+grad_fn = lambda x: [2*x[0], 2*x[1]]
+print(gradient_descent(grad_fn, [3, 4], 0.1, 100))  # ~[0, 0]
+</pre>
+      <p>You'll spend the rest of Month 1 and all of Month 2 building bigger versions of this. Linear regression with GD. Logistic regression with GD. A 2-layer neural net with GD (where backprop computes the gradient). Same skeleton, more interesting gradients.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Exercises</h3>
+      <div id="exercises"></div>
+    </div>
+
+  </main>
+
+  <script>
+    Lesson.init({ id: 'day-023', day: 23, title: 'Gradient Descent', estMin: 30 });
+
+    const $ = id => document.getElementById(id);
+    const fns = {
+      bowl:   { f: (x,y) => x*x + y*y, g: (x,y) => [2*x, 2*y] },
+      quad:   { f: (x,y) => x*x + 5*y*y, g: (x,y) => [2*x, 10*y] },
+      banana: {
+        f: (x,y) => (1-x)*(1-x) + 5*(y - x*x)*(y - x*x),
+        g: (x,y) => [-2*(1-x) - 20*x*(y - x*x), 10*(y - x*x)],
+      },
+    };
+
+    const canvas = $('canvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const RANGE = 3;
+    const toScreen = (x, y) => [W/2 + x*(W/(2*RANGE)), H/2 - y*(H/(2*RANGE))];
+
+    let point = [2, 2];
+    let trajectory = [[...point]];
+    let nsteps = 0;
+
+    function drawContours() {
+      const fn = fns[$('fn').value];
+      const img = ctx.createImageData(W, H);
+      const step = 4;
+      let minV = Infinity, maxV = -Infinity;
+      const samples = [];
+      for (let py = 0; py < H; py += step) {
+        for (let px = 0; px < W; px += step) {
+          const x = (px + step/2 - W/2) / (W/(2*RANGE));
+          const y = -(py + step/2 - H/2) / (H/(2*RANGE));
+          const v = Math.min(50, fn.f(x, y));
+          samples.push({ px, py, v });
+          if (v < minV) minV = v;
+          if (v > maxV) maxV = v;
+        }
+      }
+      samples.forEach(s => {
+        const t = (s.v - minV) / (maxV - minV + 1e-9);
+        const band = Math.floor(t * 10);
+        const c = Math.floor(20 + band * 18);
+        for (let dy = 0; dy < step; dy++) for (let dx = 0; dx < step; dx++) {
+          const idx = ((s.py + dy) * W + (s.px + dx)) * 4;
+          img.data[idx]   = c;
+          img.data[idx+1] = c + 18;
+          img.data[idx+2] = c + 35;
+          img.data[idx+3] = 255;
+        }
+      });
+      ctx.putImageData(img, 0, 0);
+    }
+
+    function draw() {
+      drawContours();
+      // trajectory
+      ctx.strokeStyle = '#ffb86b';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      trajectory.forEach((p, i) => {
+        const [sx, sy] = toScreen(p[0], p[1]);
+        if (i === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+      });
+      ctx.stroke();
+      // dots
+      trajectory.forEach((p, i) => {
+        const [sx, sy] = toScreen(p[0], p[1]);
+        ctx.fillStyle = i === trajectory.length - 1 ? '#ff7a7a' : '#ffb86b';
+        ctx.beginPath();
+        ctx.arc(sx, sy, i === trajectory.length - 1 ? 6 : 3, 0, Math.PI*2);
+        ctx.fill();
+      });
+    }
+
+    function stepOne() {
+      const fn = fns[$('fn').value];
+      const lr = parseFloat($('lr').value);
+      const g = fn.g(point[0], point[1]);
+      const newPt = [point[0] - lr * g[0], point[1] - lr * g[1]];
+      // safety: cap to keep visible
+      if (Math.abs(newPt[0]) > 10 || Math.abs(newPt[1]) > 10) {
+        // diverged
+        point = newPt;
+      } else {
+        point = newPt;
+      }
+      trajectory.push([...point]);
+      nsteps++;
+      updateStats();
+      draw();
+    }
+
+    function reset() {
+      point = [Math.random()*4 - 2, Math.random()*4 - 2];
+      trajectory = [[...point]];
+      nsteps = 0;
+      updateStats();
+      draw();
+    }
+
+    function updateStats() {
+      const fn = fns[$('fn').value];
+      $('nsteps').textContent = nsteps;
+      $('pt').textContent = `(${point[0].toFixed(3)}, ${point[1].toFixed(3)})`;
+      $('fv').textContent = fn.f(point[0], point[1]).toFixed(4);
+      const g = fn.g(point[0], point[1]);
+      $('gm').textContent = Math.hypot(g[0], g[1]).toFixed(4);
+      $('lrv').textContent = parseFloat($('lr').value).toFixed(3);
+    }
+
+    $('step').addEventListener('click', stepOne);
+    $('run10').addEventListener('click', () => { for (let i = 0; i < 10; i++) stepOne(); });
+    $('run100').addEventListener('click', () => { for (let i = 0; i < 100; i++) stepOne(); });
+    $('reset').addEventListener('click', reset);
+    $('fn').addEventListener('change', () => { reset(); });
+    $('lr').addEventListener('input', () => { $('lrv').textContent = parseFloat($('lr').value).toFixed(3); });
+    reset();
+
+    Exercises.render($('exercises'), [
+      {
+        q: "Gradient descent update rule: x_{t+1} = ?",
+        type: 'mcq',
+        options: [
+          'x_t + η · ∇f(x_t)',
+          'x_t − η · ∇f(x_t)',
+          'x_t · η',
+          'η · ∇f(x_t)',
+        ],
+        answer: 1,
+        explain: 'Subtract η · gradient. We MOVE OPPOSITE to the gradient because gradient points uphill.',
+      },
+      {
+        q: "Learning rate too large causes:",
+        type: 'mcq',
+        options: [
+          'Slow convergence.',
+          'Overshooting and possibly divergence.',
+          'Always finds the global minimum faster.',
+          'Smaller steps.',
+        ],
+        answer: 1,
+        explain: 'Too large η means each step jumps past the minimum, potentially uphill. With large enough η, GD diverges entirely. Try η = 1.1 on the bowl widget to see this.',
+      },
+      {
+        q: "For f(x) = x² with starting point x = 5 and η = 0.1, the next point is:",
+        type: 'numeric', answer: 4, tol: 0,
+        explain: 'f\'(x) = 2x. At x = 5: gradient = 10. Update: 5 − 0.1 · 10 = 4.',
+      },
+      {
+        q: "Why is GD called the workhorse of ML?",
+        type: 'mcq',
+        options: [
+          'Because it\'s the fastest algorithm.',
+          'Because it works on almost any differentiable loss and scales to billions of parameters.',
+          'Because Google invented it.',
+          'Because it always finds the global minimum.',
+        ],
+        answer: 1,
+        explain: 'GD works on ANY differentiable loss — that\'s broad applicability. And it scales (with stochastic variants) to enormous models. Doesn\'t guarantee global minimum on non-convex losses, but works well in practice.',
+      },
+      {
+        q: "On a non-convex loss, gradient descent:",
+        type: 'mcq',
+        options: [
+          'Always finds the global minimum.',
+          'May get stuck in local minima or saddle points.',
+          'Doesn\'t apply.',
+          'Always diverges.',
+        ],
+        answer: 1,
+        explain: 'Local minima and saddle points are real risks. In high dimensions saddle points are more common than local minima. Modern optimizers (Adam, momentum) help escape them.',
+      },
+    ]);
+  </script>
+</body>
+</html>

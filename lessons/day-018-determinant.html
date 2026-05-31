@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Day 18 — Determinant</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="../assets/lesson.js"></script>
+</head>
+<body>
+  <main class="container">
+
+    <div class="panel">
+      <h3 style="margin-top:0">A single number that tells you a lot</h3>
+      <p>The determinant of a matrix is one number, but it tells you several things at once:</p>
+      <ol>
+        <li><strong>Volume scaling.</strong> det(A) = how much the transformation scales volumes (areas in 2D, volumes in 3D, ...).</li>
+        <li><strong>Orientation.</strong> Negative det = orientation flipped (reflection).</li>
+        <li><strong>Invertibility.</strong> det = 0 ⟺ A is singular (no inverse). Non-zero det ⟺ A is invertible.</li>
+        <li><strong>Independence.</strong> det ≠ 0 ⟺ A's columns (or rows) are linearly independent.</li>
+      </ol>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">The 2×2 formula (and why it's the area)</h3>
+      <p class="mono center" style="font-size: 1.15rem;">det([[a, b], [c, d]]) = ad − bc</p>
+      <p>Geometrically: the transformation takes the unit square to the parallelogram with sides (a, c) and (b, d). The signed area of that parallelogram is exactly <span class="mono">ad − bc</span>. Sign = orientation.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Properties to know</h3>
+      <ul>
+        <li><strong>Multiplicativity:</strong> det(AB) = det(A) · det(B). Hugely useful — composing transformations multiplies their volume scalings.</li>
+        <li><strong>Inverse:</strong> det(A⁻¹) = 1/det(A). (Inverting a transformation inverts its volume scaling.)</li>
+        <li><strong>Transpose:</strong> det(Aᵀ) = det(A). The transpose doesn't change the determinant.</li>
+        <li><strong>Triangular matrices:</strong> the determinant is just the product of diagonal entries. (Why LU decomposition makes computing det easy.)</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Interactive: drag the columns, see the signed area</h3>
+      <p>The matrix [[a, b], [c, d]] has columns (a, c) and (b, d). The shaded parallelogram is the image of the unit square. Watch its area (= |det|) and sign update as you drag. Notice: when the columns become parallel, area → 0.</p>
+
+      <canvas id="canvas" width="500" height="500" style="width:100%; max-width:500px; margin: 0 auto; cursor: grab;"></canvas>
+
+      <table style="width:100%; max-width: 500px; margin: 12px auto 0;">
+        <tr><th>quantity</th><th>value</th></tr>
+        <tr><td>column 1 (where î lands)</td><td class="mono" id="c1">(2, 0)</td></tr>
+        <tr><td>column 2 (where ĵ lands)</td><td class="mono" id="c2">(0, 2)</td></tr>
+        <tr><td>det(A) = ad − bc</td><td class="mono" id="det">4.00</td></tr>
+        <tr><td>|det| (area of parallelogram)</td><td class="mono" id="adet">4.00</td></tr>
+        <tr><td>orientation</td><td class="mono" id="orient">preserved</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Why this shows up in ML &amp; stats</h3>
+      <ul>
+        <li><strong>Change of variables in probability.</strong> When you transform a random variable Y = f(X), the density transforms with a factor of |det(Jacobian)|. The Jacobian is just the matrix of partials — and its determinant is the local volume scaling.</li>
+        <li><strong>Multivariate Gaussians.</strong> The density has a det(Σ)⁻¹ᐟ² factor — measures how much "volume" the distribution occupies in space.</li>
+        <li><strong>Normalizing flows</strong> (a generative-model family) literally track the log|det Jacobian| at each layer to maintain a valid probability distribution.</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Exercises</h3>
+      <div id="exercises"></div>
+    </div>
+
+  </main>
+
+  <script>
+    Lesson.init({ id: 'day-018', day: 18, title: 'Determinant', estMin: 30 });
+
+    const $ = id => document.getElementById(id);
+    const canvas = $('canvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const SCALE = 50, cx = W/2, cy = H/2;
+    const toScreen = (x, y) => [cx + x * SCALE, cy - y * SCALE];
+    const fromScreen = (sx, sy) => [(sx - cx)/SCALE, -(sy - cy)/SCALE];
+
+    let col1 = { x: 2, y: 0 };
+    let col2 = { x: 0, y: 2 };
+    let drag = null;
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      ctx.strokeStyle = '#2a2f3a';
+      for (let i = -5; i <= 5; i++) {
+        ctx.beginPath(); ctx.moveTo(...toScreen(i,-5)); ctx.lineTo(...toScreen(i,5)); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(...toScreen(-5,i)); ctx.lineTo(...toScreen(5,i)); ctx.stroke();
+      }
+      ctx.strokeStyle = '#9aa0aa';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(0,cy); ctx.lineTo(W,cy); ctx.moveTo(cx,0); ctx.lineTo(cx,H); ctx.stroke();
+
+      // unit square outline (faint)
+      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+      ctx.setLineDash([4,4]);
+      ctx.beginPath();
+      ctx.moveTo(...toScreen(0,0));
+      ctx.lineTo(...toScreen(1,0));
+      ctx.lineTo(...toScreen(1,1));
+      ctx.lineTo(...toScreen(0,1));
+      ctx.closePath();
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // parallelogram
+      const det = col1.x * col2.y - col1.y * col2.x;
+      ctx.fillStyle = det >= 0 ? 'rgba(110, 231, 163, 0.28)' : 'rgba(255, 122, 122, 0.28)';
+      ctx.beginPath();
+      ctx.moveTo(...toScreen(0,0));
+      ctx.lineTo(...toScreen(col1.x, col1.y));
+      ctx.lineTo(...toScreen(col1.x + col2.x, col1.y + col2.y));
+      ctx.lineTo(...toScreen(col2.x, col2.y));
+      ctx.closePath();
+      ctx.fill();
+
+      drawArrow(col1, '#7cc4ff', 'col 1 (î)');
+      drawArrow(col2, '#ff7a7a', 'col 2 (ĵ)');
+    }
+
+    function drawArrow(v, color, label) {
+      const [x1, y1] = toScreen(0, 0);
+      const [x2, y2] = toScreen(v.x, v.y);
+      ctx.strokeStyle = color; ctx.fillStyle = color;
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+      const ang = Math.atan2(y2-y1, x2-x1);
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - 12*Math.cos(ang-0.4), y2 - 12*Math.sin(ang-0.4));
+      ctx.lineTo(x2 - 12*Math.cos(ang+0.4), y2 - 12*Math.sin(ang+0.4));
+      ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.arc(x2, y2, 7, 0, Math.PI*2); ctx.fill();
+      ctx.font = '600 12px monospace';
+      ctx.fillText(label, x2 + 10, y2 - 8);
+    }
+
+    canvas.addEventListener('mousedown', e => {
+      const r = canvas.getBoundingClientRect();
+      const x = (e.clientX - r.left) * (W/r.width);
+      const y = (e.clientY - r.top) * (H/r.height);
+      const [c1x, c1y] = toScreen(col1.x, col1.y);
+      const [c2x, c2y] = toScreen(col2.x, col2.y);
+      if (Math.hypot(x-c1x, y-c1y) < 14) drag = 'c1';
+      else if (Math.hypot(x-c2x, y-c2y) < 14) drag = 'c2';
+    });
+    canvas.addEventListener('mousemove', e => {
+      if (!drag) return;
+      const r = canvas.getBoundingClientRect();
+      const x = (e.clientX - r.left) * (W/r.width);
+      const y = (e.clientY - r.top) * (H/r.height);
+      const [mx, my] = fromScreen(x, y);
+      const t = drag === 'c1' ? col1 : col2;
+      t.x = Math.round(mx*10)/10; t.y = Math.round(my*10)/10;
+      update();
+    });
+    canvas.addEventListener('mouseup', () => { drag = null; });
+
+    function update() {
+      const det = col1.x * col2.y - col1.y * col2.x;
+      $('c1').textContent = `(${col1.x.toFixed(1)}, ${col1.y.toFixed(1)})`;
+      $('c2').textContent = `(${col2.x.toFixed(1)}, ${col2.y.toFixed(1)})`;
+      $('det').textContent = det.toFixed(2);
+      $('adet').textContent = Math.abs(det).toFixed(2);
+      $('orient').textContent = Math.abs(det) < 0.01
+        ? 'space collapses (singular!)'
+        : det > 0 ? 'preserved' : 'flipped';
+      draw();
+    }
+    update();
+
+    Exercises.render($('exercises'), [
+      {
+        q: "Determinant of [[3, 1], [2, 4]]?",
+        type: 'numeric', answer: 10, tol: 0,
+        explain: '3·4 − 1·2 = 12 − 2 = 10.',
+      },
+      {
+        q: "Determinant of [[1, 2], [2, 4]]?",
+        type: 'numeric', answer: 0, tol: 0,
+        explain: '1·4 − 2·2 = 0. Singular — the rows (and columns) are linearly dependent.',
+      },
+      {
+        q: "If det(A) = 3 and det(B) = 4, then det(AB) = ?",
+        type: 'numeric', answer: 12, tol: 0,
+        explain: 'Multiplicativity: det(AB) = det(A)·det(B) = 3·4 = 12.',
+      },
+      {
+        q: "Negative determinant means the transformation:",
+        type: 'mcq',
+        options: [
+          'Shrinks the unit square to zero.',
+          'Flips orientation (mirror reflection).',
+          'Is rotation only.',
+          'Has no inverse.',
+        ],
+        answer: 1,
+        explain: 'A negative determinant signals orientation reversal — like a mirror reflection. The transformation maps a "right-handed" basis to a "left-handed" one.',
+      },
+      {
+        q: "If det(A) = 5, then det(A⁻¹) = ?",
+        type: 'numeric', answer: 0.2, tol: 0.001,
+        explain: 'det(A⁻¹) = 1/det(A) = 1/5 = 0.2. The inverse transformation scales volumes by the reciprocal factor.',
+      },
+    ]);
+  </script>
+</body>
+</html>

@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Day 19 — Limits &amp; Rate of Change</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="../assets/lesson.js"></script>
+</head>
+<body>
+  <main class="container">
+
+    <div class="panel">
+      <h3 style="margin-top:0">Calculus, restarted as an adult</h3>
+      <p>School calculus felt mechanical because it was taught mechanically. Today is the reframe: <strong>a derivative is a rate of change. Period.</strong> Every formula, every rule, every trick is just a way to compute that one thing.</p>
+      <p>And we're building toward gradient descent in 3 days. Understanding rate-of-change is the prerequisite for understanding why ML training works at all.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">The mental model</h3>
+      <p>Take a function f. Pick a point x. Ask: <em>"if I nudge x by a tiny amount h, how much does f(x) change?"</em></p>
+      <p>The <strong>average rate of change</strong> over an interval of width h is:</p>
+      <p class="mono center" style="font-size: 1.1rem;">(f(x + h) − f(x)) / h</p>
+      <p>The <strong>derivative</strong> (instantaneous rate of change) is what this approaches as h → 0:</p>
+      <p class="mono center" style="font-size: 1.15rem;">f'(x) = lim_{h→0} (f(x + h) − f(x)) / h</p>
+      <p>That ratio is the slope of the line through (x, f(x)) and (x+h, f(x+h)) — a <em>secant</em>. As h shrinks, the secant rotates toward the <em>tangent</em> line at x. The derivative is its slope.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Interactive: secant → tangent as h → 0</h3>
+      <p>Pick a function. Move the point x. Shrink h. Watch the secant line (blue) rotate to match the tangent (orange). The slopes converge.</p>
+
+      <div class="row">
+        <label class="mono">f(x) =</label>
+        <select id="fn">
+          <option value="x2">x²</option>
+          <option value="x3">x³</option>
+          <option value="sin">sin(x)</option>
+          <option value="exp">eˣ</option>
+        </select>
+      </div>
+
+      <canvas id="canvas" width="640" height="400" style="width:100%; max-width:640px; margin: 10px auto;"></canvas>
+
+      <div class="controls" style="margin-top: 12px;">
+        <label>point x</label>
+        <input type="range" id="x" min="-3" max="3" step="0.1" value="1">
+        <span class="val" id="xv">1.0</span>
+
+        <label>step h</label>
+        <input type="range" id="h" min="0.01" max="2" step="0.01" value="1">
+        <span class="val" id="hv">1.00</span>
+      </div>
+
+      <table style="width:100%; margin-top: 14px;">
+        <tr><th>quantity</th><th>value</th></tr>
+        <tr><td>f(x)</td><td class="mono" id="fx">1.0</td></tr>
+        <tr><td>f(x + h)</td><td class="mono" id="fxh">4.0</td></tr>
+        <tr><td>secant slope = (f(x+h) − f(x)) / h</td><td class="mono" id="slope">3.0</td></tr>
+        <tr><td>true derivative f'(x)</td><td class="mono" id="deriv">2.0</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">The famous derivatives — derive them once</h3>
+      <table style="width:100%">
+        <tr><th>f(x)</th><th>f'(x)</th><th>why (informally)</th></tr>
+        <tr><td class="mono">xⁿ</td><td class="mono">n · xⁿ⁻¹</td><td>power rule; derive via binomial expansion of (x+h)ⁿ</td></tr>
+        <tr><td class="mono">eˣ</td><td class="mono">eˣ</td><td>defined to be its own derivative — that's what e is</td></tr>
+        <tr><td class="mono">ln(x)</td><td class="mono">1/x</td><td>inverse of eˣ; reciprocal at the relevant point</td></tr>
+        <tr><td class="mono">sin(x)</td><td class="mono">cos(x)</td><td>direct from unit-circle geometry; angle change rate</td></tr>
+        <tr><td class="mono">cos(x)</td><td class="mono">−sin(x)</td><td>same source, shifted by π/2</td></tr>
+        <tr><td class="mono">a · f(x)</td><td class="mono">a · f'(x)</td><td>linearity of differentiation</td></tr>
+        <tr><td class="mono">f(x) + g(x)</td><td class="mono">f'(x) + g'(x)</td><td>linearity</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Exercises</h3>
+      <div id="exercises"></div>
+    </div>
+
+  </main>
+
+  <script>
+    Lesson.init({ id: 'day-019', day: 19, title: 'Limits & Rate of Change', estMin: 30 });
+
+    const $ = id => document.getElementById(id);
+    const fns = {
+      x2: { f: x => x*x, df: x => 2*x, label: 'x²' },
+      x3: { f: x => x*x*x, df: x => 3*x*x, label: 'x³' },
+      sin: { f: Math.sin, df: Math.cos, label: 'sin(x)' },
+      exp: { f: Math.exp, df: Math.exp, label: 'eˣ' },
+    };
+    const canvas = $('canvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const PAD = 40;
+    const xScale = (W - 2 * PAD) / 8;   // -4 to 4
+    const yScale = (H - 2 * PAD) / 10;  // -5 to 5
+    const cx = PAD + 4 * xScale;
+    const cy = PAD + 5 * yScale;
+    const toScreen = (x, y) => [cx + x * xScale, cy - y * yScale];
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      const fn = fns[$('fn').value];
+      const x0 = parseFloat($('x').value);
+      const h  = parseFloat($('h').value);
+
+      // grid
+      ctx.strokeStyle = '#2a2f3a';
+      for (let i = -4; i <= 4; i++) {
+        ctx.beginPath(); ctx.moveTo(...toScreen(i, -5)); ctx.lineTo(...toScreen(i, 5)); ctx.stroke();
+      }
+      for (let i = -5; i <= 5; i++) {
+        ctx.beginPath(); ctx.moveTo(...toScreen(-4, i)); ctx.lineTo(...toScreen(4, i)); ctx.stroke();
+      }
+      // axes
+      ctx.strokeStyle = '#9aa0aa';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(PAD, cy); ctx.lineTo(W - PAD, cy); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx, PAD); ctx.lineTo(cx, H - PAD); ctx.stroke();
+
+      // function
+      ctx.strokeStyle = '#7cc4ff';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      let first = true;
+      for (let x = -4; x <= 4; x += 0.02) {
+        const y = fn.f(x);
+        if (Math.abs(y) > 8) { first = true; continue; }
+        const [sx, sy] = toScreen(x, y);
+        if (first) { ctx.moveTo(sx, sy); first = false; }
+        else ctx.lineTo(sx, sy);
+      }
+      ctx.stroke();
+
+      // tangent at x0
+      const y0 = fn.f(x0);
+      const slopeTan = fn.df(x0);
+      ctx.strokeStyle = '#ffb86b';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5, 5]);
+      ctx.beginPath();
+      const [tx1, ty1] = toScreen(x0 - 3, y0 - 3 * slopeTan);
+      const [tx2, ty2] = toScreen(x0 + 3, y0 + 3 * slopeTan);
+      ctx.moveTo(tx1, ty1); ctx.lineTo(tx2, ty2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // secant
+      const x1 = x0 + h;
+      const y1 = fn.f(x1);
+      const slopeSec = (y1 - y0) / h;
+      ctx.strokeStyle = '#6ee7a3';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      const [sx1, sy1] = toScreen(x0 - 1, y0 - slopeSec);
+      const [sx2, sy2] = toScreen(x1 + 1, y1 + slopeSec);
+      ctx.moveTo(sx1, sy1); ctx.lineTo(sx2, sy2);
+      ctx.stroke();
+
+      // points
+      ctx.fillStyle = '#6ee7a3';
+      ctx.beginPath(); ctx.arc(...toScreen(x0, y0), 5, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(...toScreen(x1, y1), 5, 0, Math.PI*2); ctx.fill();
+
+      // legend
+      ctx.font = '600 12px monospace';
+      ctx.fillStyle = '#6ee7a3'; ctx.fillText('— secant', W - 130, 24);
+      ctx.fillStyle = '#ffb86b'; ctx.fillText('-- tangent', W - 130, 40);
+      ctx.fillStyle = '#7cc4ff'; ctx.fillText(`— f(x) = ${fn.label}`, W - 130, 56);
+    }
+
+    function update() {
+      const fn = fns[$('fn').value];
+      const x0 = parseFloat($('x').value);
+      const h  = parseFloat($('h').value);
+      $('xv').textContent = x0.toFixed(1);
+      $('hv').textContent = h.toFixed(2);
+      const y0 = fn.f(x0), y1 = fn.f(x0 + h);
+      $('fx').textContent  = y0.toFixed(3);
+      $('fxh').textContent = y1.toFixed(3);
+      $('slope').textContent = ((y1 - y0) / h).toFixed(3);
+      $('deriv').textContent = fn.df(x0).toFixed(3);
+      draw();
+    }
+    ['fn', 'x', 'h'].forEach(id => $(id).addEventListener('input', update));
+    update();
+
+    Exercises.render($('exercises'), [
+      {
+        q: "Derivative of f(x) = x³ at x = 2?",
+        type: 'numeric', answer: 12, tol: 0,
+        explain: 'f\'(x) = 3x² (power rule). At x = 2: 3·4 = 12.',
+      },
+      {
+        q: "Derivative of f(x) = 5x² + 3x + 7?",
+        type: 'mcq',
+        options: ['10x + 3', '10x + 3 + 7', '5x + 3', 'x² + x'],
+        answer: 0,
+        explain: 'd/dx[5x²] = 10x; d/dx[3x] = 3; d/dx[7] = 0. Sum: 10x + 3. Linearity is your friend.',
+      },
+      {
+        q: "Derivative of eˣ at x = 0?",
+        type: 'numeric', answer: 1, tol: 0,
+        explain: 'd/dx[eˣ] = eˣ. At x = 0: e⁰ = 1. eˣ is defined such that this is true.',
+      },
+      {
+        q: "The derivative of f at x is geometrically:",
+        type: 'mcq',
+        options: [
+          'The value of f(x).',
+          'The slope of the tangent line to f at x.',
+          'The area under f at x.',
+          'The integral of f at x.',
+        ],
+        answer: 1,
+        explain: 'Slope of the tangent — the instantaneous rate of change. Watch the secant in the widget collapse to the tangent as h → 0.',
+      },
+      {
+        q: "If h is tiny, the secant slope (f(x+h) - f(x)) / h approximates:",
+        type: 'mcq',
+        options: ['f(x)', 'f\'(x)', 'h', '0'],
+        answer: 1,
+        explain: 'The defining limit of f\'(x). For small h, the secant slope ≈ derivative. This is also the basis of numerical differentiation in code.',
+      },
+    ]);
+  </script>
+</body>
+</html>

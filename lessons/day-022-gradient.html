@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Day 22 — Gradient: Direction of Steepest Ascent</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="../assets/lesson.js"></script>
+</head>
+<body>
+  <main class="container">
+
+    <div class="panel">
+      <h3 style="margin-top:0">The 2-line answer to "what is a gradient?"</h3>
+      <p>The gradient of a multivariable function f(x, y, ...) is the <strong>vector of its partial derivatives</strong>:</p>
+      <p class="mono center" style="font-size: 1.1rem;">∇f = (∂f/∂x, ∂f/∂y, ...)</p>
+      <p>It <strong>points in the direction of steepest ascent</strong>. Its magnitude is the rate of ascent in that direction.</p>
+      <p>This is the foundation of every gradient-based optimizer in ML. Tomorrow: gradient descent uses ∇f to know which way to step.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Partial derivatives in 30 seconds</h3>
+      <p>For f(x, y), the <strong>partial derivative with respect to x</strong> is the derivative of f treating y as a constant. Notation: ∂f/∂x.</p>
+      <p>Example: f(x, y) = x²y + 3y.</p>
+      <ul>
+        <li>∂f/∂x = 2xy (treat y as constant).</li>
+        <li>∂f/∂y = x² + 3 (treat x as constant).</li>
+      </ul>
+      <p>So at (x, y) = (2, 1): ∇f = (2·2·1, 2² + 3) = (4, 7). The function increases fastest in the direction (4, 7) from that point.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Interactive: contour plot + gradient field</h3>
+      <p>Each color band is a "level set" — points where f has the same value. The orange arrows are the gradient field — at each point, an arrow pointing in the direction of steepest ascent. Notice: the gradient is <strong>perpendicular to the level curves</strong>.</p>
+
+      <div class="row">
+        <label class="mono">f(x, y) =</label>
+        <select id="fn">
+          <option value="bowl">x² + y² (bowl)</option>
+          <option value="saddle">x² − y² (saddle)</option>
+          <option value="quad">x² + 2y² (elliptical bowl)</option>
+          <option value="banana">(1 − x)² + 5(y − x²)² (banana — Rosenbrock)</option>
+        </select>
+      </div>
+
+      <canvas id="canvas" width="500" height="500" style="width:100%; max-width:500px; margin: 12px auto;"></canvas>
+
+      <div class="controls">
+        <label>point x</label>
+        <input type="range" id="px" min="-2" max="2" step="0.05" value="1">
+        <span class="val" id="pxv">1.0</span>
+        <label>point y</label>
+        <input type="range" id="py" min="-2" max="2" step="0.05" value="1">
+        <span class="val" id="pyv">1.0</span>
+      </div>
+
+      <table style="width:100%; margin-top: 12px;">
+        <tr><th>quantity</th><th>value</th></tr>
+        <tr><td>f(x, y)</td><td class="mono" id="fv">—</td></tr>
+        <tr><td>∂f/∂x</td><td class="mono" id="dfx">—</td></tr>
+        <tr><td>∂f/∂y</td><td class="mono" id="dfy">—</td></tr>
+        <tr><td>∇f magnitude (steepness)</td><td class="mono" id="mag">—</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Why the gradient is perpendicular to level sets</h3>
+      <p>A level set is points where f = const. Moving along a level set doesn't change f, so the directional derivative along that direction is zero. The gradient is the vector that gives the directional derivative as a dot product: <span class="mono">∇f · u</span>. For this to be zero along any direction in the level set, ∇f must be perpendicular to those directions.</p>
+      <p>This is why every ML optimization trajectory zig-zags across contours but never along them.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Exercises</h3>
+      <div id="exercises"></div>
+    </div>
+
+  </main>
+
+  <script>
+    Lesson.init({ id: 'day-022', day: 22, title: 'Gradient', estMin: 30 });
+
+    const $ = id => document.getElementById(id);
+    const fns = {
+      bowl:   { f: (x,y) => x*x + y*y, gx: (x,y) => 2*x, gy: (x,y) => 2*y },
+      saddle: { f: (x,y) => x*x - y*y, gx: (x,y) => 2*x, gy: (x,y) => -2*y },
+      quad:   { f: (x,y) => x*x + 2*y*y, gx: (x,y) => 2*x, gy: (x,y) => 4*y },
+      banana: {
+        f: (x,y) => (1-x)*(1-x) + 5*(y - x*x)*(y - x*x),
+        gx: (x,y) => -2*(1-x) - 20*x*(y - x*x),
+        gy: (x,y) => 10*(y - x*x),
+      },
+    };
+    const canvas = $('canvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const RANGE = 2.5;
+    const toScreen = (x, y) => [W/2 + x*(W/(2*RANGE)), H/2 - y*(H/(2*RANGE))];
+    const fromScreen = (sx, sy) => [(sx - W/2)/(W/(2*RANGE)), -(sy - H/2)/(H/(2*RANGE))];
+
+    function draw() {
+      const fn = fns[$('fn').value];
+      ctx.clearRect(0, 0, W, H);
+
+      // contour fill: discrete bands
+      const img = ctx.createImageData(W, H);
+      let minV = Infinity, maxV = -Infinity;
+      const samples = [];
+      const step = 4;
+      for (let py = 0; py < H; py += step) {
+        for (let px = 0; px < W; px += step) {
+          const [x, y] = fromScreen(px + step/2, py + step/2);
+          const v = fn.f(x, y);
+          samples.push({ px, py, v });
+          if (v < minV) minV = v;
+          if (v > maxV) maxV = v;
+        }
+      }
+      samples.forEach(s => {
+        const t = (s.v - minV) / (maxV - minV + 1e-9);
+        // band into 10 levels
+        const band = Math.floor(t * 10);
+        const c = Math.floor(20 + band * 18);
+        for (let dy = 0; dy < step; dy++) for (let dx = 0; dx < step; dx++) {
+          const idx = ((s.py + dy) * W + (s.px + dx)) * 4;
+          img.data[idx]   = c;
+          img.data[idx+1] = c + 20;
+          img.data[idx+2] = c + 35;
+          img.data[idx+3] = 255;
+        }
+      });
+      ctx.putImageData(img, 0, 0);
+
+      // gradient field
+      ctx.strokeStyle = '#ffb86b';
+      ctx.fillStyle = '#ffb86b';
+      ctx.lineWidth = 1;
+      for (let gy = -RANGE; gy <= RANGE; gy += 0.5) {
+        for (let gx = -RANGE; gx <= RANGE; gx += 0.5) {
+          const dx = fn.gx(gx, gy), dy = fn.gy(gx, gy);
+          const mag = Math.hypot(dx, dy);
+          if (mag < 0.01) continue;
+          const len = Math.min(0.2, 0.2 * mag / (mag + 1));
+          const ux = dx / mag * len;
+          const uy = dy / mag * len;
+          const [sx1, sy1] = toScreen(gx, gy);
+          const [sx2, sy2] = toScreen(gx + ux, gy + uy);
+          ctx.beginPath();
+          ctx.moveTo(sx1, sy1); ctx.lineTo(sx2, sy2);
+          ctx.stroke();
+        }
+      }
+
+      // selected point + gradient at it
+      const x = parseFloat($('px').value);
+      const y = parseFloat($('py').value);
+      const dx = fn.gx(x, y), dy = fn.gy(x, y);
+      const mag = Math.hypot(dx, dy);
+      if (mag > 0.001) {
+        const len = 0.5;
+        const ux = dx / mag * len;
+        const uy = dy / mag * len;
+        ctx.strokeStyle = '#ff7a7a';
+        ctx.fillStyle = '#ff7a7a';
+        ctx.lineWidth = 3;
+        const [sx1, sy1] = toScreen(x, y);
+        const [sx2, sy2] = toScreen(x + ux, y + uy);
+        ctx.beginPath();
+        ctx.moveTo(sx1, sy1); ctx.lineTo(sx2, sy2);
+        ctx.stroke();
+        const ang = Math.atan2(sy2-sy1, sx2-sx1);
+        ctx.beginPath();
+        ctx.moveTo(sx2, sy2);
+        ctx.lineTo(sx2 - 10*Math.cos(ang-0.4), sy2 - 10*Math.sin(ang-0.4));
+        ctx.lineTo(sx2 - 10*Math.cos(ang+0.4), sy2 - 10*Math.sin(ang+0.4));
+        ctx.closePath(); ctx.fill();
+        ctx.beginPath(); ctx.arc(sx1, sy1, 6, 0, Math.PI*2); ctx.fill();
+      }
+    }
+
+    function update() {
+      const fn = fns[$('fn').value];
+      const x = parseFloat($('px').value);
+      const y = parseFloat($('py').value);
+      $('pxv').textContent = x.toFixed(2);
+      $('pyv').textContent = y.toFixed(2);
+      $('fv').textContent = fn.f(x, y).toFixed(3);
+      $('dfx').textContent = fn.gx(x, y).toFixed(3);
+      $('dfy').textContent = fn.gy(x, y).toFixed(3);
+      $('mag').textContent = Math.hypot(fn.gx(x, y), fn.gy(x, y)).toFixed(3);
+      draw();
+    }
+    ['fn', 'px', 'py'].forEach(id => $(id).addEventListener('input', update));
+    update();
+
+    Exercises.render($('exercises'), [
+      {
+        q: "f(x, y) = x² + y². ∇f at (1, 2) = ?",
+        type: 'mcq',
+        options: ['(1, 2)', '(2, 4)', '(2x, 2y)', '(1, 1)'],
+        answer: 1,
+        explain: '∂f/∂x = 2x, ∂f/∂y = 2y. At (1, 2): (2·1, 2·2) = (2, 4). The gradient is a numeric vector at each specific point.',
+      },
+      {
+        q: "f(x, y) = 3x²y + y³. ∂f/∂x = ?",
+        type: 'mcq',
+        options: ['6xy', '3x² + 3y²', '6xy + 3y²', '6x + 3y²'],
+        answer: 0,
+        explain: 'Treat y as constant. d/dx[3x²y] = 6xy. d/dx[y³] = 0 (no x). So ∂f/∂x = 6xy.',
+      },
+      {
+        q: "The gradient ∇f points in the direction of:",
+        type: 'mcq',
+        options: [
+          'Steepest descent.',
+          'Steepest ascent.',
+          'A random direction.',
+          'The level curve.',
+        ],
+        answer: 1,
+        explain: 'Steepest ASCENT. To minimize, we move in the OPPOSITE direction — that\'s what gradient DESCENT does (tomorrow\'s lesson).',
+      },
+      {
+        q: "The gradient is always ___ to the level curves of f.",
+        type: 'mcq',
+        options: ['parallel', 'perpendicular', 'tangent', 'at 45°'],
+        answer: 1,
+        explain: 'Perpendicular. Along a level curve f doesn\'t change, so the directional derivative along it is 0, so ∇f · (direction along curve) = 0 — meaning ∇f is perpendicular to the curve direction.',
+      },
+      {
+        q: "f(x, y) = e^(x+y). ∂f/∂x at (0, 0)?",
+        type: 'numeric', answer: 1, tol: 0.001,
+        explain: '∂f/∂x = e^(x+y). At (0, 0): e⁰ = 1.',
+      },
+    ]);
+  </script>
+</body>
+</html>

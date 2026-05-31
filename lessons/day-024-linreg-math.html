@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Day 24 — Linear Regression Part 1 (Math)</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="../assets/lesson.js"></script>
+</head>
+<body>
+  <main class="container">
+
+    <div class="panel">
+      <h3 style="margin-top:0">The simplest ML model — and a great teacher</h3>
+      <p>Linear regression is the "hello world" of ML, but underestimated. It teaches you, in one tidy package, every concept you'll re-meet in deeper models: the <strong>model</strong>, the <strong>loss</strong>, the <strong>closed-form solution</strong>, the <strong>iterative (gradient descent) solution</strong>, and how to evaluate fit. Internalize this and most ML papers become easier to read.</p>
+      <p>Today: the math. Tomorrow: the code (NumPy from scratch, both ways).</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">The model</h3>
+      <p>You have data: n examples, each with d features. <strong>X</strong> is the n×d data matrix. <strong>y</strong> is the n-vector of targets. The model assumes there's some weight vector β and a bias β₀ such that:</p>
+      <p class="mono center" style="font-size: 1.1rem;">y_i ≈ β₀ + β₁ x_{i1} + β₂ x_{i2} + ... + β_d x_{id}</p>
+      <p>Or in matrix form, after augmenting X with a column of 1s for the bias:</p>
+      <p class="mono center" style="font-size: 1.15rem;">y ≈ Xβ</p>
+      <p>Goal: find β.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">The loss</h3>
+      <p>Define "fit quality" by sum of squared residuals — <strong>mean squared error (MSE)</strong>:</p>
+      <p class="mono center" style="font-size: 1.1rem;">L(β) = (1/n) · Σᵢ (y_i − x_iᵀ β)²  =  (1/n) · ‖y − Xβ‖²</p>
+      <p>Why squared? Two reasons:</p>
+      <ul>
+        <li>It's smooth (differentiable everywhere) so gradient-based methods work.</li>
+        <li>It corresponds to <strong>maximum likelihood under Gaussian noise</strong>. (If you assume the noise is normally distributed, minimizing MSE is the same as finding the most likely β.)</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">The closed-form solution — the normal equations</h3>
+      <p>Take the gradient of L w.r.t. β. Set to zero. Solve. You get:</p>
+      <p class="mono center" style="font-size: 1.15rem;">β* = (XᵀX)⁻¹ Xᵀ y</p>
+      <p>This is the <strong>normal equations solution</strong>. It exists in closed form because the loss is a convex quadratic in β. No iterations needed — direct formula.</p>
+      <p class="hint"><strong>The derivation:</strong> L = (1/n)·(y - Xβ)ᵀ(y - Xβ). Expand. Differentiate w.r.t. β: ∇L = (-2/n)·Xᵀ(y - Xβ). Set to 0: XᵀXβ = Xᵀy. If XᵀX is invertible (it usually is for n &gt; d with non-degenerate features), β = (XᵀX)⁻¹Xᵀy.</p>
+      <p><em>In practice you don't compute the inverse. You call np.linalg.solve(XᵀX, Xᵀy).</em></p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">The iterative solution — gradient descent</h3>
+      <p>You can also reach β* by gradient descent. The gradient of MSE is:</p>
+      <p class="mono center" style="font-size: 1.1rem;">∇L(β) = (−2/n) · Xᵀ (y − Xβ)</p>
+      <p>So the GD update is:</p>
+      <p class="mono center" style="font-size: 1.1rem;">β ← β + (2η/n) · Xᵀ(y − Xβ)</p>
+      <p>(Or just absorb the constants into η.)</p>
+      <p><strong>Why two methods?</strong></p>
+      <ul>
+        <li>Normal equations are exact but O(d³) (the matrix inverse). Fine for d &lt; 1000-ish.</li>
+        <li>GD is iterative but scales to huge d. Required for neural nets where d is millions.</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Interactive: fit a line to data</h3>
+      <p>Click to add data points. The widget fits the optimal line in closed form and shows the MSE. Try with two collinear points (perfect fit), three nearly-collinear (very low MSE), and very scattered (high MSE).</p>
+
+      <canvas id="canvas" width="500" height="500" style="width:100%; max-width:500px; margin: 0 auto; cursor: crosshair;"></canvas>
+
+      <table style="width:100%; max-width: 500px; margin: 12px auto 0;">
+        <tr><th>quantity</th><th>value</th></tr>
+        <tr><td>n points</td><td class="mono" id="n">0</td></tr>
+        <tr><td>fitted line: y = ax + b</td><td class="mono" id="line">—</td></tr>
+        <tr><td>MSE</td><td class="mono" id="mse">—</td></tr>
+        <tr><td>R² (variance explained)</td><td class="mono" id="r2">—</td></tr>
+      </table>
+
+      <p class="muted center" style="margin-top: 8px;">click to add point · shift-click to remove · <button class="secondary" id="clear" style="padding: 4px 12px;">clear</button></p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Exercises</h3>
+      <div id="exercises"></div>
+    </div>
+
+  </main>
+
+  <script>
+    Lesson.init({ id: 'day-024', day: 24, title: 'Linear Regression — Math', estMin: 30 });
+
+    const $ = id => document.getElementById(id);
+    const canvas = $('canvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const PAD = 30;
+    const xToScreen = x => PAD + ((x + 5) / 10) * (W - 2 * PAD);
+    const yToScreen = y => H - PAD - ((y + 5) / 10) * (H - 2 * PAD);
+    const fromScreen = (sx, sy) => [
+      ((sx - PAD) / (W - 2 * PAD)) * 10 - 5,
+      ((H - PAD - sy) / (H - 2 * PAD)) * 10 - 5,
+    ];
+
+    let pts = [];
+
+    function fitLine() {
+      if (pts.length < 2) return null;
+      const n = pts.length;
+      const mx = pts.reduce((s, p) => s + p[0], 0) / n;
+      const my = pts.reduce((s, p) => s + p[1], 0) / n;
+      let num = 0, den = 0;
+      pts.forEach(p => { num += (p[0] - mx) * (p[1] - my); den += (p[0] - mx) ** 2; });
+      if (den < 1e-9) return null;
+      const a = num / den;
+      const b = my - a * mx;
+      // MSE
+      const mse = pts.reduce((s, p) => s + (p[1] - (a * p[0] + b)) ** 2, 0) / n;
+      // R²
+      const sst = pts.reduce((s, p) => s + (p[1] - my) ** 2, 0);
+      const ssr = pts.reduce((s, p) => s + (p[1] - (a * p[0] + b)) ** 2, 0);
+      const r2 = sst > 1e-9 ? 1 - ssr / sst : 1;
+      return { a, b, mse, r2 };
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      // grid
+      ctx.strokeStyle = '#2a2f3a';
+      for (let i = -5; i <= 5; i++) {
+        ctx.beginPath();
+        ctx.moveTo(xToScreen(i), yToScreen(-5));
+        ctx.lineTo(xToScreen(i), yToScreen(5));
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(xToScreen(-5), yToScreen(i));
+        ctx.lineTo(xToScreen(5), yToScreen(i));
+        ctx.stroke();
+      }
+      ctx.strokeStyle = '#9aa0aa';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(xToScreen(-5), yToScreen(0));
+      ctx.lineTo(xToScreen(5), yToScreen(0));
+      ctx.moveTo(xToScreen(0), yToScreen(-5));
+      ctx.lineTo(xToScreen(0), yToScreen(5));
+      ctx.stroke();
+      // points
+      pts.forEach(p => {
+        ctx.fillStyle = '#7cc4ff';
+        ctx.beginPath();
+        ctx.arc(xToScreen(p[0]), yToScreen(p[1]), 5, 0, Math.PI*2);
+        ctx.fill();
+      });
+      // fitted line
+      const fit = fitLine();
+      if (fit) {
+        ctx.strokeStyle = '#ffb86b';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(xToScreen(-5), yToScreen(fit.a * -5 + fit.b));
+        ctx.lineTo(xToScreen(5),  yToScreen(fit.a * 5 + fit.b));
+        ctx.stroke();
+        // residuals
+        ctx.strokeStyle = 'rgba(255, 122, 122, 0.5)';
+        ctx.lineWidth = 1;
+        pts.forEach(p => {
+          const yhat = fit.a * p[0] + fit.b;
+          ctx.beginPath();
+          ctx.moveTo(xToScreen(p[0]), yToScreen(p[1]));
+          ctx.lineTo(xToScreen(p[0]), yToScreen(yhat));
+          ctx.stroke();
+        });
+      }
+    }
+
+    function update() {
+      $('n').textContent = pts.length;
+      const fit = fitLine();
+      if (fit) {
+        $('line').textContent = `y = ${fit.a.toFixed(3)}x + ${fit.b.toFixed(3)}`;
+        $('mse').textContent = fit.mse.toFixed(4);
+        $('r2').textContent = fit.r2.toFixed(4);
+      } else {
+        $('line').textContent = '— (need 2+ non-vertical points)';
+        $('mse').textContent = '—';
+        $('r2').textContent = '—';
+      }
+      draw();
+    }
+
+    canvas.addEventListener('click', e => {
+      const r = canvas.getBoundingClientRect();
+      const x = (e.clientX - r.left) * (W / r.width);
+      const y = (e.clientY - r.top) * (H / r.height);
+      if (e.shiftKey) {
+        let best = -1, bd = 14;
+        pts.forEach((p, i) => {
+          const d = Math.hypot(xToScreen(p[0]) - x, yToScreen(p[1]) - y);
+          if (d < bd) { bd = d; best = i; }
+        });
+        if (best >= 0) pts.splice(best, 1);
+      } else {
+        const [px, py] = fromScreen(x, y);
+        pts.push([px, py]);
+      }
+      update();
+    });
+    $('clear').addEventListener('click', () => { pts = []; update(); });
+
+    update();
+
+    Exercises.render($('exercises'), [
+      {
+        q: "Linear regression minimizes the sum of squared:",
+        type: 'mcq',
+        options: [
+          'Inputs',
+          'Outputs',
+          'Residuals (actual − predicted)',
+          'Predictions',
+        ],
+        answer: 2,
+        explain: 'MSE = Σ(y_i − ŷ_i)². The squared residuals — vertical distances between data point and fitted line.',
+      },
+      {
+        q: "The closed-form linear regression solution β* = ?",
+        type: 'mcq',
+        options: [
+          '(XᵀX)⁻¹ Xᵀ y',
+          'Xᵀ y',
+          'X y',
+          '(X⁻¹) Xᵀ y',
+        ],
+        answer: 0,
+        explain: 'The normal equations. Derived from ∇L(β) = 0. Don\'t literally compute the inverse — use np.linalg.solve(XᵀX, Xᵀy).',
+      },
+      {
+        q: "Why use squared error rather than absolute error?",
+        type: 'mcq',
+        options: [
+          'It\'s easier to type.',
+          'It\'s smooth (differentiable) and corresponds to MLE under Gaussian noise.',
+          'It\'s the only option.',
+          'It\'s smaller.',
+        ],
+        answer: 1,
+        explain: 'Smoothness lets gradient methods work. And there\'s the Gaussian-noise MLE connection — minimizing MSE is the MLE under that assumption. Absolute error (L1) is also used (called LAD regression), more robust to outliers but harder to optimize.',
+      },
+      {
+        q: "When closed-form fails (XᵀX is singular), what causes it?",
+        type: 'mcq',
+        options: [
+          'Too many data points.',
+          'Linearly dependent features (e.g., one feature is sum of two others).',
+          'Float underflow.',
+          'Negative target values.',
+        ],
+        answer: 1,
+        explain: 'XᵀX singular ⟺ X has linearly dependent columns. Common cause: perfectly correlated features, or more features than samples. Regularization (ridge regression) fixes this by adding λI to XᵀX.',
+      },
+      {
+        q: "R² = 0.85 means:",
+        type: 'mcq',
+        options: [
+          '85% of predictions are correct.',
+          'The model explains 85% of the variance in y.',
+          'The model is wrong 15% of the time.',
+          'There are 85 features.',
+        ],
+        answer: 1,
+        explain: 'R² is 1 − (residual variance) / (total variance). It\'s the fraction of variance in y "explained" by the model. R² = 1 → perfect fit; R² = 0 → no better than predicting the mean.',
+      },
+    ]);
+  </script>
+</body>
+</html>

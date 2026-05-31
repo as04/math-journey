@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Day 25 — Linear Regression Part 2 (Code)</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="../assets/lesson.js"></script>
+</head>
+<body>
+  <main class="container">
+
+    <div class="panel">
+      <h3 style="margin-top:0">From math to code</h3>
+      <p>Yesterday: the math. Today: the code. We'll implement linear regression in NumPy <em>two</em> ways — closed form and gradient descent — and check they give the same answer.</p>
+      <p>This is your first <strong>portfolio piece</strong>. By end of week, this code goes into a public repo (Day 28 walks you through pushing it).</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Setup — generate synthetic data</h3>
+      <pre class="mono" style="background:var(--panel-2); padding: 12px; border-radius: 6px; overflow-x:auto;">import numpy as np
+
+rng = np.random.default_rng(42)
+n = 100
+d = 3  # 3 features
+X = rng.standard_normal((n, d))
+true_beta = np.array([1.5, -2.0, 0.7])
+true_bias = 0.5
+noise = rng.standard_normal(n) * 0.3
+y = X @ true_beta + true_bias + noise
+</pre>
+      <p>Standard practice: <strong>augment X with a column of ones to absorb the bias</strong>:</p>
+      <pre class="mono" style="background:var(--panel-2); padding: 12px; border-radius: 6px;">X_aug = np.hstack([np.ones((n, 1)), X])  # shape (n, d+1)
+# Now β includes bias as β[0]
+</pre>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Method 1 — Closed form (normal equations)</h3>
+      <pre class="mono" style="background:var(--panel-2); padding: 12px; border-radius: 6px; overflow-x:auto;">def fit_closed_form(X, y):
+    # X is (n, d), y is (n,). Returns β of shape (d,).
+    return np.linalg.solve(X.T @ X, X.T @ y)
+
+beta_cf = fit_closed_form(X_aug, y)
+print("closed form β:", beta_cf)
+# Expected: ≈ [0.5, 1.5, -2.0, 0.7] (bias, then weights)
+</pre>
+      <p>One line of math, one line of code (plus the augmentation). <strong>Always use <code class="mono">np.linalg.solve</code>, never <code class="mono">np.linalg.inv</code>.</strong></p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Method 2 — Gradient descent</h3>
+      <pre class="mono" style="background:var(--panel-2); padding: 12px; border-radius: 6px; overflow-x:auto;">def fit_gd(X, y, lr=0.01, n_steps=2000):
+    n, d = X.shape
+    beta = np.zeros(d)
+    losses = []
+    for _ in range(n_steps):
+        y_pred = X @ beta
+        residual = y_pred - y
+        loss = (residual ** 2).mean()
+        grad = (2 / n) * X.T @ residual   # ← the gradient of MSE
+        beta -= lr * grad
+        losses.append(loss)
+    return beta, losses
+
+beta_gd, losses = fit_gd(X_aug, y)
+print("GD β:", beta_gd)
+print("closed form β:", beta_cf)
+# Should match closely. If not — check lr, n_steps, feature scaling.
+</pre>
+      <p><strong>Compare them.</strong> They should agree to 3-4 decimal places. If they don't, debug:</p>
+      <ul>
+        <li>If GD diverges (β explodes): lr too high. Halve it.</li>
+        <li>If GD never converges: lr too low, or features on different scales. Standardize: subtract mean, divide by std for each feature.</li>
+        <li>If they agree but predictions are off: bug in the data or the augmentation.</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Interactive: GD on real data, live</h3>
+      <p>The widget below generates noisy data from a true line. Watch GD converge in real time. Try different learning rates. Notice how the loss curve drops and the line snaps to the data.</p>
+
+      <canvas id="canvas" width="500" height="350" style="width:100%; max-width:500px; margin: 0 auto;"></canvas>
+      <canvas id="losscurve" width="500" height="150" style="width:100%; max-width:500px; margin: 10px auto 0;"></canvas>
+
+      <div class="controls">
+        <label>learning rate</label>
+        <input type="range" id="lr" min="0.001" max="0.5" step="0.001" value="0.05">
+        <span class="val" id="lrv">0.050</span>
+
+        <label>noise σ</label>
+        <input type="range" id="noise" min="0" max="2" step="0.1" value="0.6">
+        <span class="val" id="noisev">0.6</span>
+      </div>
+      <div class="row" style="margin-top: 10px;">
+        <button id="step">step</button>
+        <button id="run100">run 100 steps</button>
+        <button id="reset" class="secondary">new data</button>
+      </div>
+
+      <table style="width:100%; margin-top: 12px;">
+        <tr><th>quantity</th><th>value</th></tr>
+        <tr><td>steps</td><td class="mono" id="nsteps">0</td></tr>
+        <tr><td>current β = (slope, intercept)</td><td class="mono" id="beta">—</td></tr>
+        <tr><td>current MSE</td><td class="mono" id="mse">—</td></tr>
+        <tr><td>closed-form optimal β</td><td class="mono" id="cfbeta">—</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Your action item</h3>
+      <p>Implement both methods in a Python file. Compare. Commit to your <code class="mono">project-euler/</code> sibling folder (or create <code class="mono">portfolio/linreg/</code>). On Day 28 you'll write the README and push to GitHub.</p>
+      <pre class="mono" style="background:var(--panel-2); padding: 12px; border-radius: 6px;">portfolio/
+  linreg/
+    main.py          # both methods + comparison
+    data.py          # synthetic data generation
+    README.md        # explain what + why (you'll write Day 28)
+    requirements.txt # just numpy
+</pre>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Exercises</h3>
+      <div id="exercises"></div>
+    </div>
+
+  </main>
+
+  <script>
+    Lesson.init({ id: 'day-025', day: 25, title: 'Linear Regression — Code', estMin: 35 });
+
+    const $ = id => document.getElementById(id);
+    const canvas = $('canvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const PAD = 30;
+    const xToScreen = x => PAD + ((x + 5) / 10) * (W - 2 * PAD);
+    const yToScreen = y => H - PAD - ((y + 8) / 16) * (H - 2 * PAD);
+
+    const lc = $('losscurve');
+    const lctx = lc.getContext('2d');
+
+    let pts = [];
+    let beta = [0, 0]; // slope, intercept (for y = β₀ + β₁ x)
+    let losses = [];
+    let cfBeta = [0, 0];
+    let nsteps = 0;
+
+    function generateData() {
+      const trueSlope = 0.8 + Math.random() * 0.8;
+      const trueInt = -2 + Math.random() * 4;
+      const sigma = parseFloat($('noise').value);
+      pts = [];
+      for (let i = 0; i < 30; i++) {
+        const x = (Math.random() - 0.5) * 8;
+        const y = trueSlope * x + trueInt + (Math.random() - 0.5) * 2 * sigma * 1.5;
+        pts.push([x, y]);
+      }
+      // closed-form fit
+      const n = pts.length;
+      const mx = pts.reduce((s, p) => s + p[0], 0) / n;
+      const my = pts.reduce((s, p) => s + p[1], 0) / n;
+      let num = 0, den = 0;
+      pts.forEach(p => { num += (p[0] - mx) * (p[1] - my); den += (p[0] - mx) ** 2; });
+      const a = num / (den || 1);
+      const b = my - a * mx;
+      cfBeta = [b, a]; // intercept, slope
+      beta = [0, 0];
+      losses = [];
+      nsteps = 0;
+      updateAll();
+    }
+
+    function mse(beta) {
+      return pts.reduce((s, p) => s + (p[1] - (beta[0] + beta[1] * p[0])) ** 2, 0) / pts.length;
+    }
+
+    function gdStep() {
+      const lr = parseFloat($('lr').value);
+      const n = pts.length;
+      let gradInt = 0, gradSlope = 0;
+      pts.forEach(p => {
+        const pred = beta[0] + beta[1] * p[0];
+        const err = pred - p[1];
+        gradInt += 2 * err;
+        gradSlope += 2 * err * p[0];
+      });
+      gradInt /= n; gradSlope /= n;
+      beta[0] -= lr * gradInt;
+      beta[1] -= lr * gradSlope;
+      losses.push(mse(beta));
+      nsteps++;
+    }
+
+    function drawData() {
+      ctx.clearRect(0, 0, W, H);
+      ctx.strokeStyle = '#2a2f3a';
+      for (let i = -5; i <= 5; i++) {
+        ctx.beginPath(); ctx.moveTo(xToScreen(i), yToScreen(-8)); ctx.lineTo(xToScreen(i), yToScreen(8)); ctx.stroke();
+      }
+      for (let i = -8; i <= 8; i += 2) {
+        ctx.beginPath(); ctx.moveTo(xToScreen(-5), yToScreen(i)); ctx.lineTo(xToScreen(5), yToScreen(i)); ctx.stroke();
+      }
+      ctx.strokeStyle = '#9aa0aa';
+      ctx.beginPath();
+      ctx.moveTo(xToScreen(-5), yToScreen(0)); ctx.lineTo(xToScreen(5), yToScreen(0));
+      ctx.moveTo(xToScreen(0), yToScreen(-8)); ctx.lineTo(xToScreen(0), yToScreen(8));
+      ctx.stroke();
+      // closed-form line (faint)
+      ctx.strokeStyle = '#6ee7a3'; ctx.lineWidth = 1.5; ctx.setLineDash([4,4]);
+      ctx.beginPath();
+      ctx.moveTo(xToScreen(-5), yToScreen(cfBeta[0] + cfBeta[1] * -5));
+      ctx.lineTo(xToScreen(5),  yToScreen(cfBeta[0] + cfBeta[1] * 5));
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // GD current line
+      ctx.strokeStyle = '#ffb86b'; ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(xToScreen(-5), yToScreen(beta[0] + beta[1] * -5));
+      ctx.lineTo(xToScreen(5),  yToScreen(beta[0] + beta[1] * 5));
+      ctx.stroke();
+      // points
+      pts.forEach(p => {
+        ctx.fillStyle = '#7cc4ff';
+        ctx.beginPath();
+        ctx.arc(xToScreen(p[0]), yToScreen(p[1]), 4, 0, Math.PI*2);
+        ctx.fill();
+      });
+      // legend
+      ctx.font = '600 11px monospace';
+      ctx.fillStyle = '#ffb86b'; ctx.fillText('— GD line', W - 110, 20);
+      ctx.fillStyle = '#6ee7a3'; ctx.fillText('-- closed form', W - 110, 36);
+    }
+
+    function drawLoss() {
+      lctx.clearRect(0, 0, lc.width, lc.height);
+      if (losses.length < 2) return;
+      const maxL = Math.max(...losses);
+      const minL = Math.min(...losses);
+      lctx.strokeStyle = '#7cc4ff';
+      lctx.lineWidth = 2;
+      lctx.beginPath();
+      losses.forEach((l, i) => {
+        const x = (i / (losses.length - 1)) * lc.width;
+        const y = lc.height - 10 - ((l - minL) / (maxL - minL + 1e-9)) * (lc.height - 20);
+        if (i === 0) lctx.moveTo(x, y); else lctx.lineTo(x, y);
+      });
+      lctx.stroke();
+      lctx.fillStyle = '#9aa0aa';
+      lctx.font = '11px monospace';
+      lctx.fillText('loss over steps', 10, 14);
+    }
+
+    function updateAll() {
+      $('lrv').textContent = parseFloat($('lr').value).toFixed(3);
+      $('noisev').textContent = parseFloat($('noise').value).toFixed(1);
+      $('nsteps').textContent = nsteps;
+      $('beta').textContent = `(slope=${beta[1].toFixed(3)}, int=${beta[0].toFixed(3)})`;
+      $('mse').textContent = pts.length ? mse(beta).toFixed(4) : '—';
+      $('cfbeta').textContent = `(slope=${cfBeta[1].toFixed(3)}, int=${cfBeta[0].toFixed(3)})`;
+      drawData();
+      drawLoss();
+    }
+
+    $('step').addEventListener('click', () => { gdStep(); updateAll(); });
+    $('run100').addEventListener('click', () => { for (let i = 0; i < 100; i++) gdStep(); updateAll(); });
+    $('reset').addEventListener('click', generateData);
+    $('lr').addEventListener('input', updateAll);
+    $('noise').addEventListener('input', updateAll);
+    generateData();
+
+    Exercises.render($('exercises'), [
+      {
+        q: "Why augment X with a column of 1s?",
+        type: 'mcq',
+        options: [
+          'To make matrix multiplication faster.',
+          'To absorb the bias (intercept) into β so we can use one formula.',
+          'It\'s a NumPy convention.',
+          'To prevent overflow.',
+        ],
+        answer: 1,
+        explain: 'With a column of 1s, the first entry of β is the bias. Without this trick, you\'d need to track bias separately. Same math, cleaner code.',
+      },
+      {
+        q: "Gradient of MSE loss L = (1/n)·Σ(y - Xβ)² with respect to β is:",
+        type: 'mcq',
+        options: [
+          '(2/n) · Xᵀ(Xβ − y)',
+          '2 · (y − Xβ)',
+          'Xβ − y',
+          '(1/n) · X',
+        ],
+        answer: 0,
+        explain: '∇L = (2/n) · Xᵀ(Xβ − y) = −(2/n) · Xᵀ(y − Xβ). Set to zero → XᵀXβ = Xᵀy (normal equations).',
+      },
+      {
+        q: "GD diverges (β explodes to NaN). Most likely cause:",
+        type: 'mcq',
+        options: [
+          'Too few iterations.',
+          'Learning rate too high.',
+          'Closed-form solution would have worked.',
+          'You forgot to import numpy.',
+        ],
+        answer: 1,
+        explain: 'High LR causes overshoot. Each step jumps past the minimum and farther uphill. Divergence is the GD-of-failure signature. Halve the learning rate.',
+      },
+      {
+        q: "Features on very different scales (e.g., one in [0, 1], another in [10⁶, 10⁷]) hurt GD because:",
+        type: 'mcq',
+        options: [
+          'GD doesn\'t support floats.',
+          'The loss landscape becomes elongated, and a single LR can\'t handle both scales — slow on one, divergent on the other.',
+          'NumPy is buggy with large numbers.',
+          'It doesn\'t — GD is scale-invariant.',
+        ],
+        answer: 1,
+        explain: 'GD\'s effective step on each parameter scales with its gradient. Wildly different feature scales → wildly different gradients → no single LR works. Standardize features (subtract mean, divide by std) before GD.',
+      },
+      {
+        q: "Which method handles d = 10⁶ features better?",
+        type: 'mcq',
+        options: [
+          'Closed form — it\'s exact.',
+          'Gradient descent — closed form is O(d³).',
+          'Both equally well.',
+          'Neither.',
+        ],
+        answer: 1,
+        explain: 'Closed form requires solving (XᵀX)β = Xᵀy — that\'s O(d³) for the system solve, ~10¹⁸ operations at d = 10⁶. Infeasible. GD is O(nd) per step. This is why ML uses GD: it scales.',
+      },
+    ]);
+  </script>
+</body>
+</html>

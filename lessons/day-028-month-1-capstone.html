@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Day 28 — Month 1 Capstone: Push Your Repo</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="../assets/lesson.js"></script>
+</head>
+<body>
+  <main class="container">
+
+    <div class="panel">
+      <h3 style="margin-top:0">The day you turn private learning into public signal</h3>
+      <p>You've spent 27 days building skills. Today you turn the linear-regression code from Days 24-25 (plus your Project Euler solutions) into a polished, public GitHub repo. That repo is the start of the portfolio that matters when you apply to Google.</p>
+      <p>The goal isn't "perfect code." The goal is "code, README, intent, all together, public, with green commit history." A consistent <em>visible</em> output beats sporadic excellent work every time.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">The capstone checklist</h3>
+      <p>Work through this top to bottom. ~60 minutes total.</p>
+      <ol>
+        <li>Create a new repo on GitHub: <strong>your-username/ml-from-scratch</strong> (or a name you prefer).</li>
+        <li>In the repo, create folders:
+          <pre class="mono" style="background:var(--panel-2); padding: 10px; border-radius: 6px; margin: 8px 0;">linear_regression/
+project_euler/
+README.md</pre>
+        </li>
+        <li>Put your Day 24-25 linear regression code in <code class="mono">linear_regression/main.py</code>. Make sure it runs end-to-end with <code class="mono">python main.py</code>.</li>
+        <li>Add a small <code class="mono">linear_regression/README.md</code> that explains:
+          <ul>
+            <li>What problem this code solves (linear regression).</li>
+            <li>Both methods implemented (closed-form and gradient descent).</li>
+            <li>How to run it.</li>
+            <li>Sample output (paste actual run output).</li>
+          </ul>
+        </li>
+        <li>Put Project Euler solutions (#1, #2, #3 from Days 7 and 14) in <code class="mono">project_euler/p001.py</code>, <code class="mono">p002.py</code>, <code class="mono">p003.py</code>.</li>
+        <li>Write the top-level <code class="mono">README.md</code>. Template below.</li>
+        <li>Commit and push.</li>
+        <li>Add the repo link to your LinkedIn / resume.</li>
+      </ol>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Top-level README.md template</h3>
+      <pre class="mono" style="background:var(--panel-2); padding: 12px; border-radius: 6px; overflow-x:auto; font-size: 0.85rem;"># ML from Scratch — a learning portfolio
+
+Implementing ML algorithms from first principles in NumPy, no scikit-learn.
+This is a learning project — each algorithm is built to be readable,
+not optimal.
+
+## Contents
+- [`linear_regression/`](linear_regression/) — fit a line, both closed-form
+  and via gradient descent. The two methods agree to 4 decimal places.
+- [`project_euler/`](project_euler/) — solutions to selected Project Euler
+  problems, with both brute-force and math-informed versions.
+
+## Running
+```bash
+pip install numpy
+python linear_regression/main.py
+python project_euler/p001.py
+```
+
+## About
+Built as part of a [self-directed math journey](https://github.com/as04/math-journey).
+Updated weekly.
+</pre>
+      <p>Adjust the link/name. The "About" link is important — it signals you're on a sustained learning arc, not posting one-shot code.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">A note on signaling</h3>
+      <p>Recruiters skim repos in 60 seconds. They want to see:</p>
+      <ul>
+        <li>README that explains <em>what</em> and <em>why</em> immediately.</li>
+        <li>Code that runs (have a clear "how to run" section).</li>
+        <li>Reasonable commit history (small, descriptive commits — not "wip" × 50).</li>
+        <li>Recent activity (commit graph green within the last month).</li>
+      </ul>
+      <p>You don't need stars. You don't need fancy CI. You don't need contributors. You need <strong>evidence of consistent thinking</strong>.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Optional: pin your repo</h3>
+      <p>On your GitHub profile page, pin your best 3-6 repos. Put this one near the top. After Month 4 you'll have a neural net repo, an MILP-optimization repo, and a paper-replication repo — all worth pinning.</p>
+      <p>By Month 6, your GitHub profile is part of your candidacy. By Month 12, it's a primary signal.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Exercises</h3>
+      <div id="exercises"></div>
+    </div>
+
+  </main>
+
+  <script>
+    Lesson.init({ id: 'day-028', day: 28, title: 'Month 1 Capstone — Push Your Repo', estMin: 40 });
+
+    Exercises.render(document.getElementById('exercises'), [
+      {
+        q: "Why does Google look at your GitHub at all?",
+        type: 'mcq',
+        options: [
+          'They don\'t — only LinkedIn matters.',
+          'It signals sustained interest + working code + ability to communicate via README.',
+          'Just to count your stars.',
+          'To check you can use git.',
+        ],
+        answer: 1,
+        explain: 'A GitHub with consistent, well-explained work is one of the highest-bandwidth signals about a candidate. Code samples + READMEs + commit history together show what self-reports can\'t.',
+      },
+      {
+        q: "What\'s the most important file in your repo for a 60-second recruiter skim?",
+        type: 'mcq',
+        options: ['main.py', 'README.md', 'requirements.txt', '.gitignore'],
+        answer: 1,
+        explain: 'README. It\'s what they read first. If it doesn\'t explain what + why + how-to-run, most recruiters won\'t go deeper.',
+      },
+      {
+        q: "Commit message hygiene: which is preferable?",
+        type: 'mcq',
+        options: [
+          '"wip", "wip 2", "more wip"',
+          '"Add closed-form linear regression with normal equations"',
+          '"updated stuff"',
+          '"."',
+        ],
+        answer: 1,
+        explain: 'Descriptive, action-verb messages. Imagine someone reading just the commit log to understand what changed.',
+      },
+      {
+        q: "Stars on a portfolio repo:",
+        type: 'mcq',
+        options: [
+          'Are essential — without stars, the repo is worthless.',
+          'Are nice but not required. Recruiters care more about code quality + READMEs + commit consistency.',
+          'Hurt your chances if too low.',
+          'Are calculated by GitHub automatically.',
+        ],
+        answer: 1,
+        explain: 'Stars correlate with popularity, not skill. Most recruiters look past them. What matters: can they understand the repo, does the code work, do you show sustained engagement.',
+      },
+      {
+        q: "After pushing today, what\'s the single best follow-up action?",
+        type: 'mcq',
+        options: [
+          'Refactor everything immediately.',
+          'Pin the repo on your GitHub profile and link it from LinkedIn.',
+          'Wait for stars.',
+          'Delete it and start over.',
+        ],
+        answer: 1,
+        explain: 'Make it discoverable. Pinning + LinkedIn link makes the repo show up in searches and profile reviews. A portfolio nobody can find is worth nothing.',
+      },
+    ]);
+  </script>
+</body>
+</html>

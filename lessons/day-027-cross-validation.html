@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Day 27 — Cross-Validation</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="../assets/lesson.js"></script>
+</head>
+<body>
+  <main class="container">
+
+    <div class="panel">
+      <h3 style="margin-top:0">The one thing that separates real ML from naive ML</h3>
+      <p>You fit a model. Training loss is low. You celebrate. You deploy. Predictions on new data are terrible. <em>Welcome to overfitting.</em></p>
+      <p>Cross-validation is the discipline that prevents this. It's the difference between an engineer who can ship ML and one who keeps shipping broken models. Every ML interview will probe whether you understand it.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Overfitting in one picture</h3>
+      <p>A polynomial of degree 1 fits a line through data — might miss trends. Degree 5 fits a smooth curve — usually about right. Degree 20 fits <em>every single training point exactly</em> — and oscillates wildly between them, useless on new data.</p>
+      <p>Training error keeps going down with more model complexity. <strong>Test error (on held-out data) eventually goes back up.</strong> The U-shape in test error is the picture of overfitting.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">The remedies, in order of sophistication</h3>
+      <ol>
+        <li><strong>Train/test split.</strong> Set aside 20-30% of data, never touch it during training, only evaluate at the end. Cheapest defense.</li>
+        <li><strong>Train/validation/test split.</strong> Three pieces. Use validation to choose hyperparameters; test only once at the end. Standard practice.</li>
+        <li><strong>K-fold cross-validation.</strong> Split data into k folds. For each fold: train on the other k-1, evaluate on it. Average the k errors. <em>Much</em> more robust than a single train/val split, at k× the compute.</li>
+        <li><strong>Stratified k-fold:</strong> for classification with imbalanced classes, ensures each fold has the same class proportions.</li>
+        <li><strong>Time-series CV (forward-chaining):</strong> for time-ordered data, never train on future data. Different mechanics, same idea.</li>
+      </ol>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Interactive: watch overfitting happen</h3>
+      <p>Fit a polynomial of increasing degree to noisy data. Watch the training error fall, then the test error U-shape up.</p>
+
+      <canvas id="canvas" width="500" height="350" style="width:100%; max-width:500px; margin: 0 auto;"></canvas>
+
+      <div class="controls">
+        <label>polynomial degree</label>
+        <input type="range" id="deg" min="1" max="15" step="1" value="3">
+        <span class="val" id="degv">3</span>
+      </div>
+
+      <table style="width:100%; margin-top: 12px;">
+        <tr><th>quantity</th><th>value</th></tr>
+        <tr><td>training MSE</td><td class="mono" id="trainMSE">—</td></tr>
+        <tr><td>test MSE (held-out points)</td><td class="mono" id="testMSE">—</td></tr>
+        <tr><td>verdict</td><td class="mono" id="verdict">—</td></tr>
+      </table>
+
+      <button id="newdata" class="secondary" style="margin-top: 10px;">new data</button>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">K-fold cross-validation, in code</h3>
+      <pre class="mono" style="background:var(--panel-2); padding: 12px; border-radius: 6px; overflow-x:auto;">from sklearn.model_selection import KFold
+import numpy as np
+
+def k_fold_cv(X, y, model_class, k=5):
+    kf = KFold(n_splits=k, shuffle=True, random_state=42)
+    errors = []
+    for train_idx, val_idx in kf.split(X):
+        X_tr, X_val = X[train_idx], X[val_idx]
+        y_tr, y_val = y[train_idx], y[val_idx]
+        model = model_class().fit(X_tr, y_tr)
+        pred = model.predict(X_val)
+        errors.append(((pred - y_val) ** 2).mean())
+    return np.mean(errors), np.std(errors)
+</pre>
+      <p>5 numbers; average is the CV error; std tells you how stable it is across folds.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Two sins to avoid</h3>
+      <ol>
+        <li><strong>"Peeking" at test data during model selection.</strong> If you keep tweaking the model based on test performance, the test set has effectively become a training set. Hold the test set out until the very end.</li>
+        <li><strong>"Data leakage."</strong> Letting information from the test set sneak into training. Example: scaling features using statistics from the full dataset, then splitting. Always: fit-scaler-on-train-only, transform train and test separately.</li>
+      </ol>
+      <p>Both of these are why a model can show 99% accuracy in a paper and fail in production.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Exercises</h3>
+      <div id="exercises"></div>
+    </div>
+
+  </main>
+
+  <script>
+    Lesson.init({ id: 'day-027', day: 27, title: 'Cross-Validation', estMin: 30 });
+
+    const $ = id => document.getElementById(id);
+    const canvas = $('canvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const PAD = 30;
+    const xToScreen = x => PAD + ((x + 5) / 10) * (W - 2 * PAD);
+    const yToScreen = y => H - PAD - ((y + 4) / 8) * (H - 2 * PAD);
+
+    let trainPts = [], testPts = [];
+
+    function trueFn(x) { return 0.3 * Math.sin(x) + 0.1 * x; }
+
+    function generate() {
+      trainPts = []; testPts = [];
+      for (let i = 0; i < 15; i++) {
+        const x = (Math.random() - 0.5) * 8;
+        const y = trueFn(x) + (Math.random() - 0.5) * 0.8;
+        trainPts.push([x, y]);
+      }
+      for (let i = 0; i < 30; i++) {
+        const x = (Math.random() - 0.5) * 8;
+        const y = trueFn(x) + (Math.random() - 0.5) * 0.8;
+        testPts.push([x, y]);
+      }
+      update();
+    }
+
+    // polyfit via least squares
+    function polyfit(pts, deg) {
+      const n = pts.length;
+      // X matrix: rows are [1, x, x², ..., x^deg]
+      const X = pts.map(p => Array.from({ length: deg + 1 }, (_, j) => Math.pow(p[0], j)));
+      const y = pts.map(p => p[1]);
+      // solve (XᵀX) β = Xᵀ y via Gaussian elimination
+      const XtX = Array.from({ length: deg + 1 }, () => Array(deg + 1).fill(0));
+      const Xty = Array(deg + 1).fill(0);
+      for (let i = 0; i < n; i++) {
+        for (let r = 0; r <= deg; r++) {
+          Xty[r] += X[i][r] * y[i];
+          for (let c = 0; c <= deg; c++) {
+            XtX[r][c] += X[i][r] * X[i][c];
+          }
+        }
+      }
+      // augmented matrix for Gaussian elimination
+      const M = XtX.map((row, i) => [...row, Xty[i]]);
+      // tiny regularization for numerical stability
+      for (let i = 0; i <= deg; i++) M[i][i] += 1e-6;
+      for (let i = 0; i <= deg; i++) {
+        let maxRow = i;
+        for (let k = i + 1; k <= deg; k++) {
+          if (Math.abs(M[k][i]) > Math.abs(M[maxRow][i])) maxRow = k;
+        }
+        [M[i], M[maxRow]] = [M[maxRow], M[i]];
+        if (Math.abs(M[i][i]) < 1e-12) return null;
+        for (let k = i + 1; k <= deg; k++) {
+          const f = M[k][i] / M[i][i];
+          for (let j = i; j <= deg + 1; j++) M[k][j] -= f * M[i][j];
+        }
+      }
+      const beta = Array(deg + 1).fill(0);
+      for (let i = deg; i >= 0; i--) {
+        let s = M[i][deg + 1];
+        for (let j = i + 1; j <= deg; j++) s -= M[i][j] * beta[j];
+        beta[i] = s / M[i][i];
+      }
+      return beta;
+    }
+
+    function evalPoly(beta, x) {
+      return beta.reduce((s, c, i) => s + c * Math.pow(x, i), 0);
+    }
+
+    function mse(pts, beta) {
+      return pts.reduce((s, p) => s + (p[1] - evalPoly(beta, p[0])) ** 2, 0) / pts.length;
+    }
+
+    function draw(beta) {
+      ctx.clearRect(0, 0, W, H);
+      ctx.strokeStyle = '#2a2f3a';
+      for (let i = -5; i <= 5; i++) {
+        ctx.beginPath(); ctx.moveTo(xToScreen(i), yToScreen(-4)); ctx.lineTo(xToScreen(i), yToScreen(4)); ctx.stroke();
+      }
+      for (let i = -4; i <= 4; i++) {
+        ctx.beginPath(); ctx.moveTo(xToScreen(-5), yToScreen(i)); ctx.lineTo(xToScreen(5), yToScreen(i)); ctx.stroke();
+      }
+      ctx.strokeStyle = '#9aa0aa';
+      ctx.beginPath();
+      ctx.moveTo(xToScreen(-5), yToScreen(0)); ctx.lineTo(xToScreen(5), yToScreen(0));
+      ctx.moveTo(xToScreen(0), yToScreen(-4)); ctx.lineTo(xToScreen(0), yToScreen(4));
+      ctx.stroke();
+      // true function (faint)
+      ctx.strokeStyle = 'rgba(110, 231, 163, 0.4)';
+      ctx.lineWidth = 1.5; ctx.setLineDash([4,4]);
+      ctx.beginPath();
+      let first = true;
+      for (let x = -5; x <= 5; x += 0.05) {
+        const y = trueFn(x);
+        const [sx, sy] = [xToScreen(x), yToScreen(y)];
+        if (first) { ctx.moveTo(sx, sy); first = false; } else ctx.lineTo(sx, sy);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // fitted poly
+      if (beta) {
+        ctx.strokeStyle = '#ffb86b'; ctx.lineWidth = 2;
+        ctx.beginPath();
+        first = true;
+        for (let x = -5; x <= 5; x += 0.05) {
+          const y = evalPoly(beta, x);
+          if (Math.abs(y) > 6) { first = true; continue; }
+          const [sx, sy] = [xToScreen(x), yToScreen(y)];
+          if (first) { ctx.moveTo(sx, sy); first = false; } else ctx.lineTo(sx, sy);
+        }
+        ctx.stroke();
+      }
+      // points
+      testPts.forEach(p => {
+        ctx.fillStyle = 'rgba(255, 122, 122, 0.45)';
+        ctx.beginPath();
+        ctx.arc(xToScreen(p[0]), yToScreen(p[1]), 3, 0, Math.PI*2);
+        ctx.fill();
+      });
+      trainPts.forEach(p => {
+        ctx.fillStyle = '#7cc4ff';
+        ctx.beginPath();
+        ctx.arc(xToScreen(p[0]), yToScreen(p[1]), 5, 0, Math.PI*2);
+        ctx.fill();
+      });
+      // legend
+      ctx.font = '600 11px monospace';
+      ctx.fillStyle = '#7cc4ff'; ctx.fillText('● train', W - 130, 18);
+      ctx.fillStyle = '#ff7a7a'; ctx.fillText('● test (held out)', W - 130, 34);
+      ctx.fillStyle = '#ffb86b'; ctx.fillText('— fitted poly', W - 130, 50);
+      ctx.fillStyle = '#6ee7a3'; ctx.fillText('-- true function', W - 130, 66);
+    }
+
+    function update() {
+      const deg = parseInt($('deg').value, 10);
+      $('degv').textContent = deg;
+      const beta = polyfit(trainPts, deg);
+      if (!beta) {
+        $('trainMSE').textContent = '—';
+        $('testMSE').textContent = '—';
+        $('verdict').textContent = 'degenerate fit';
+        draw(null);
+        return;
+      }
+      const tr = mse(trainPts, beta);
+      const te = mse(testPts, beta);
+      $('trainMSE').textContent = tr.toFixed(4);
+      $('testMSE').textContent  = te.toFixed(4);
+      $('verdict').textContent = te > 2 * tr ? '⚠ overfitting (test >> train)'
+                                 : te > tr * 1.3 ? 'slight overfit'
+                                 : 'OK';
+      draw(beta);
+    }
+
+    $('deg').addEventListener('input', update);
+    $('newdata').addEventListener('click', generate);
+    generate();
+
+    Exercises.render($('exercises'), [
+      {
+        q: "Training error decreases monotonically as model complexity increases. Test error:",
+        type: 'mcq',
+        options: [
+          'Also decreases monotonically.',
+          'Is U-shaped: decreases then increases (overfitting).',
+          'Stays constant.',
+          'Always equals training error.',
+        ],
+        answer: 1,
+        explain: 'The classic bias-variance U-curve. At low complexity, both errors are high (underfit). At medium complexity, both are low. At high complexity, training keeps dropping but test rises — the model memorizes noise.',
+      },
+      {
+        q: "K-fold cross-validation with k=5 trains the model how many times?",
+        type: 'numeric', answer: 5, tol: 0,
+        explain: 'Once per fold: train on 4 folds, evaluate on the held-out one, repeat 5 times. The 5 errors are averaged. Cost: 5× training, but much more stable than a single train/val split.',
+      },
+      {
+        q: "Why use train/val/test (three splits) instead of train/test?",
+        type: 'mcq',
+        options: [
+          'It\'s a tradition.',
+          'Validation set is used to pick hyperparameters; test set is touched only once at the end so the final score is honest.',
+          'Three is just better than two.',
+          'It makes training faster.',
+        ],
+        answer: 1,
+        explain: 'If you tune on the test set, you have effectively trained on it. The "honest" test number is only honest when the test set has never influenced any decision.',
+      },
+      {
+        q: "Which is a data leakage example?",
+        type: 'mcq',
+        options: [
+          'Standardizing features using statistics from all data (train + test combined) before splitting.',
+          'Using a separate test set.',
+          'Shuffling training data.',
+          'Using k-fold CV.',
+        ],
+        answer: 0,
+        explain: 'Computing mean/std from the full dataset before splitting means test-set info has leaked into training. Always fit the scaler on train ONLY, then transform both train and test using train\'s statistics.',
+      },
+      {
+        q: "If the standard deviation of k-fold CV errors is huge:",
+        type: 'mcq',
+        options: [
+          'The model is great.',
+          'The evaluation is unstable — different splits give very different errors. Could mean small dataset or unstable model.',
+          'k is too large.',
+          'It\'s normal.',
+        ],
+        answer: 1,
+        explain: 'High variance across folds suggests the model\'s performance depends a lot on the specific training data. Could mean dataset is too small, model is too complex, or both. Useful signal — don\'t ignore the std.',
+      },
+    ]);
+  </script>
+</body>
+</html>

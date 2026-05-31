@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Day 17 — Solving Ax = b</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="../assets/lesson.js"></script>
+</head>
+<body>
+  <main class="container">
+
+    <div class="panel">
+      <h3 style="margin-top:0">The most-asked question in linear algebra</h3>
+      <p>"<strong>Solve Ax = b.</strong>" Every linear regression. Every system of equations. Every step of every numerical solver. The question is: <em>given the matrix A and the vector b, find the vector x that satisfies Ax = b.</em></p>
+      <p>Three possible outcomes:</p>
+      <ol>
+        <li><strong>Unique solution.</strong> A is invertible (det ≠ 0). x = A⁻¹b. (We almost never literally compute A⁻¹; more on that below.)</li>
+        <li><strong>No solution.</strong> b is not in the column-space of A. The system is inconsistent.</li>
+        <li><strong>Infinitely many solutions.</strong> A has a non-trivial null space; once you find one solution, any vector in the null space added to it is also a solution.</li>
+      </ol>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">The geometric reframe</h3>
+      <p>Recall (Day 4): A takes input vectors to output vectors via x ↦ Ax. So <strong>"solve Ax = b" means: which input x lands at the output b?</strong></p>
+      <ul>
+        <li>If A is invertible (det ≠ 0), the transformation is reversible. Every output has a unique input → unique solution.</li>
+        <li>If A is singular (det = 0), it collapses space onto a lower-dimensional subspace (a line or origin in 2D). If b is in that subspace → infinitely many inputs land there. If b is outside → no input lands there.</li>
+      </ul>
+      <div class="hint">
+        <strong>The columns-of-A view:</strong> Ax is a linear combination of the columns of A with weights x₁, x₂, .... So "Ax = b solvable" ⟺ "b is in the span of A's columns."
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Interactive: solve a 2×2 system</h3>
+      <p>Set the coefficients. The widget plots the two equations as lines; their intersection (if any) is the solution. Watch what happens when the lines are parallel (no/inf solutions) vs. when they cross (unique solution).</p>
+
+      <div class="controls">
+        <label class="mono">a₁₁</label><input type="range" id="a11" min="-3" max="3" step="0.1" value="2"><span class="val" id="a11v">2.0</span>
+        <label class="mono">a₁₂</label><input type="range" id="a12" min="-3" max="3" step="0.1" value="1"><span class="val" id="a12v">1.0</span>
+        <label class="mono">b₁</label><input type="range" id="b1" min="-5" max="5" step="0.1" value="3"><span class="val" id="b1v">3.0</span>
+        <label class="mono">a₂₁</label><input type="range" id="a21" min="-3" max="3" step="0.1" value="1"><span class="val" id="a21v">1.0</span>
+        <label class="mono">a₂₂</label><input type="range" id="a22" min="-3" max="3" step="0.1" value="-1"><span class="val" id="a22v">-1.0</span>
+        <label class="mono">b₂</label><input type="range" id="b2" min="-5" max="5" step="0.1" value="0"><span class="val" id="b2v">0.0</span>
+      </div>
+
+      <p class="mono center" style="font-size: 1.05rem; margin-top: 10px;">
+        <span id="eq1">2x + 1y = 3</span><br>
+        <span id="eq2">1x − 1y = 0</span>
+      </p>
+
+      <canvas id="canvas" width="500" height="500" style="width:100%; max-width:500px; margin: 0 auto;"></canvas>
+
+      <table style="width:100%; max-width: 500px; margin: 12px auto 0;">
+        <tr><th>quantity</th><th>value</th></tr>
+        <tr><td>det(A)</td><td class="mono" id="det">—</td></tr>
+        <tr><td>case</td><td class="mono" id="caseStr">—</td></tr>
+        <tr><td>solution x</td><td class="mono" id="sol">—</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">In practice — don't compute A⁻¹</h3>
+      <p>You will almost never write <code class="mono">x = inv(A) @ b</code> in production code. Even though it's mathematically correct, it's:</p>
+      <ul>
+        <li>Slower (computing the inverse is more work than solving directly).</li>
+        <li>Less numerically stable (computing inverses amplifies rounding error).</li>
+      </ul>
+      <p>Instead, you call <code class="mono">np.linalg.solve(A, b)</code> (NumPy) or <code class="mono">solve(A, b)</code> in any library. Internally these use LU decomposition (Gaussian elimination, organized). You get the answer faster and more accurately. Remember this — it's a near-universal interview mark.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Exercises</h3>
+      <div id="exercises"></div>
+    </div>
+
+  </main>
+
+  <script>
+    Lesson.init({ id: 'day-017', day: 17, title: 'Solving Ax = b', estMin: 30 });
+
+    const $ = id => document.getElementById(id);
+    const canvas = $('canvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const SCALE = 35, cx = W/2, cy = H/2;
+    const toScreen = (x, y) => [cx + x * SCALE, cy - y * SCALE];
+
+    function get() {
+      return ['a11','a12','b1','a21','a22','b2'].reduce((o, k) => {
+        o[k] = parseFloat($(k).value); return o;
+      }, {});
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      // grid
+      ctx.strokeStyle = '#2a2f3a';
+      for (let i = -7; i <= 7; i++) {
+        ctx.beginPath(); ctx.moveTo(...toScreen(i,-7)); ctx.lineTo(...toScreen(i,7)); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(...toScreen(-7,i)); ctx.lineTo(...toScreen(7,i)); ctx.stroke();
+      }
+      ctx.strokeStyle = '#9aa0aa';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(0,cy); ctx.lineTo(W,cy); ctx.moveTo(cx,0); ctx.lineTo(cx,H); ctx.stroke();
+
+      const p = get();
+      // line 1: a11 x + a12 y = b1
+      drawLine(p.a11, p.a12, p.b1, '#7cc4ff');
+      drawLine(p.a21, p.a22, p.b2, '#ff7a7a');
+
+      // solution dot
+      const det = p.a11 * p.a22 - p.a12 * p.a21;
+      if (Math.abs(det) > 0.01) {
+        const x = (p.b1 * p.a22 - p.b2 * p.a12) / det;
+        const y = (p.a11 * p.b2 - p.a21 * p.b1) / det;
+        if (Math.abs(x) < 10 && Math.abs(y) < 10) {
+          ctx.fillStyle = '#6ee7a3';
+          ctx.beginPath();
+          ctx.arc(...toScreen(x, y), 8, 0, Math.PI*2);
+          ctx.fill();
+        }
+      }
+    }
+
+    function drawLine(a, b, c, color) {
+      ctx.strokeStyle = color; ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      if (Math.abs(b) > 0.01) {
+        const y1 = (c - a * -10) / b;
+        const y2 = (c - a * 10) / b;
+        ctx.moveTo(...toScreen(-10, y1));
+        ctx.lineTo(...toScreen(10, y2));
+      } else if (Math.abs(a) > 0.01) {
+        ctx.moveTo(...toScreen(c/a, -10));
+        ctx.lineTo(...toScreen(c/a, 10));
+      }
+      ctx.stroke();
+    }
+
+    function update() {
+      const p = get();
+      ['a11','a12','b1','a21','a22','b2'].forEach(k => $(k+'v').textContent = p[k].toFixed(1));
+      $('eq1').textContent = `${p.a11.toFixed(1)}x + ${p.a12.toFixed(1)}y = ${p.b1.toFixed(1)}`;
+      $('eq2').textContent = `${p.a21.toFixed(1)}x + ${p.a22.toFixed(1)}y = ${p.b2.toFixed(1)}`;
+      const det = p.a11 * p.a22 - p.a12 * p.a21;
+      $('det').textContent = det.toFixed(3);
+
+      if (Math.abs(det) > 0.01) {
+        const x = (p.b1 * p.a22 - p.b2 * p.a12) / det;
+        const y = (p.a11 * p.b2 - p.a21 * p.b1) / det;
+        $('caseStr').textContent = 'unique solution (lines cross)';
+        $('sol').textContent = `(${x.toFixed(3)}, ${y.toFixed(3)})`;
+      } else {
+        // parallel — check if consistent
+        // line ratio comparison: scale row 2 to row 1 if possible
+        // consistent iff b's scale to same ratio
+        const row1 = [p.a11, p.a12];
+        const row2 = [p.a21, p.a22];
+        let consistent = false;
+        if (Math.abs(row1[0]) > 0.001 || Math.abs(row1[1]) > 0.001) {
+          // find scaling factor k such that k * row1 = row2
+          const k = row1[0] !== 0 ? row2[0]/row1[0] : row2[1]/row1[1];
+          consistent = Math.abs(k * p.b1 - p.b2) < 0.01;
+        }
+        if (consistent) {
+          $('caseStr').textContent = 'infinitely many (same line)';
+          $('sol').textContent = 'parameterized — any point on the line';
+        } else {
+          $('caseStr').textContent = 'no solution (parallel, not coincident)';
+          $('sol').textContent = '—';
+        }
+      }
+      draw();
+    }
+    ['a11','a12','b1','a21','a22','b2'].forEach(k => $(k).addEventListener('input', update));
+    update();
+
+    Exercises.render($('exercises'), [
+      {
+        q: "Solve: 2x + y = 5, x − y = 1. What is x?",
+        type: 'numeric', answer: 2, tol: 0,
+        explain: 'Add the two equations: 3x = 6, so x = 2. Then y = 1. Always: add/subtract to eliminate a variable.',
+      },
+      {
+        q: "Ax = b has no solution. What's true about b?",
+        type: 'mcq',
+        options: [
+          'b is the zero vector.',
+          'b is not in the column space of A.',
+          'A must be the identity matrix.',
+          'b must be very large.',
+        ],
+        answer: 1,
+        explain: 'Ax is a linear combination of A\'s columns. If b can\'t be written as such a combination, no x exists. b must lie outside the column space.',
+      },
+      {
+        q: "det(A) = 0 and b ≠ 0. The system Ax = b has:",
+        type: 'mcq',
+        options: [
+          'Always a unique solution.',
+          'Always no solution.',
+          'Either no solution OR infinitely many — never a unique solution.',
+          'Always infinitely many solutions.',
+        ],
+        answer: 2,
+        explain: 'When det = 0, A is singular — collapses space. Either b is in the (shrunken) range, giving infinitely many preimages, or b is outside, giving none. Unique solution is only possible when A is invertible.',
+      },
+      {
+        q: "Why don\'t engineers compute x = inv(A) · b directly?",
+        type: 'mcq',
+        options: [
+          'Computing the inverse is expensive and numerically unstable.',
+          'It\'s never been implemented in NumPy.',
+          'A⁻¹ doesn\'t exist for most matrices.',
+          'It\'s just convention.',
+        ],
+        answer: 0,
+        explain: 'Computing A⁻¹ is more work AND more error-prone than directly solving the system via LU decomposition. np.linalg.solve(A, b) is always preferred over inv(A) @ b.',
+      },
+      {
+        q: "The system: x + y = 2, 2x + 2y = 4. How many solutions?",
+        type: 'mcq',
+        options: ['Zero', 'Exactly one', 'Two', 'Infinitely many'],
+        answer: 3,
+        explain: 'The second equation is just 2× the first — they\'re the same line. Every point on that line is a solution. Infinitely many. det of coefficient matrix = 0.',
+      },
+    ]);
+  </script>
+</body>
+</html>

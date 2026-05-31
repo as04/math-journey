@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Day 30 — Plan Month 2</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="../assets/lesson.js"></script>
+</head>
+<body>
+  <main class="container">
+
+    <div class="panel">
+      <h3 style="margin-top:0">30 days in. Pause and look back.</h3>
+      <p>If you did all 30 days, here's what changed:</p>
+      <ul>
+        <li><strong>Arithmetic.</strong> The fear is gone. 2-digit × 2-digit is fast. Fermi estimates are second nature.</li>
+        <li><strong>Linear algebra.</strong> You see matrices as transformations. Eigenvectors as fixed directions. Span and basis as geometric objects.</li>
+        <li><strong>Probability + stats.</strong> Bayes is a tool you reach for. Variance and covariance are not just formulas. Sample spaces are real to you.</li>
+        <li><strong>Calculus.</strong> Derivative-as-rate is internalized. Chain rule is the engine of backprop in your head.</li>
+        <li><strong>Optimization.</strong> Gradient descent is no longer mysterious.</li>
+        <li><strong>ML.</strong> You've implemented linear regression from scratch — twice (closed form + GD). It's in your public GitHub.</li>
+        <li><strong>Algorithms.</strong> Big-O fluency. Sorting tradeoffs. Recursion + first DP. Hashing pattern recognition.</li>
+        <li><strong>Project Euler.</strong> 3+ problems solved with both brute force and math.</li>
+      </ul>
+      <p>This is real. Acknowledge it before moving on.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">What Month 2 will be</h3>
+      <p>Theme: <strong>Probability deep + linear algebra deeper + first ML implementation</strong>. You'll graduate from "I understand linear regression" to "I built logistic regression from scratch and it correctly classifies my data."</p>
+      <p>The 4 weeks (sketch — will be refined when you start):</p>
+      <ul>
+        <li><strong>Week 5</strong> — Statistical estimation, MLE, sampling distributions, hypothesis testing & its critique.</li>
+        <li><strong>Week 6</strong> — Linear algebra deep: eigendecomposition, SVD (the most useful decomposition in ML), change of basis.</li>
+        <li><strong>Week 7</strong> — Logistic regression (the bridge to neural nets). Cross-entropy loss. Sigmoid and its derivative.</li>
+        <li><strong>Week 8</strong> — A/B testing math properly. Power analysis. Real-world stats pitfalls. Month 2 capstone: logistic regression on real data.</li>
+      </ul>
+      <p>Pace: same as Month 1 — 45 min/day, no more.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Your side project for Month 2</h3>
+      <p>Pick now. Options:</p>
+      <ol>
+        <li><strong>Kaggle Titanic</strong> (the classic intro). Submit a real prediction. Use your logistic regression from scratch. Track the leaderboard score.</li>
+        <li><strong>Reproduce a paper figure.</strong> Pick a small ML paper that uses linear or logistic regression on a real dataset, and reproduce one figure. Blog the process.</li>
+        <li><strong>An optimization problem from your job.</strong> Schedule, allocation, dispatch — whatever your team has. Model as MILP using PuLP. Solve. Present to your team.</li>
+      </ol>
+      <p>Your goal by end of Month 2: <strong>one more polished public artifact</strong>. The Google portfolio is built one project per month.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Self-evaluation</h3>
+      <div id="exercises"></div>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">When you're ready for Month 2</h3>
+      <p>Don't start Month 2 the same day you finish Day 30. Take a 2-3 day break. Do the arithmetic drill each day (keep streak alive), but no new lessons. Let the consolidation happen.</p>
+      <p>Then ping me ("ready for month 2") and we'll build Weeks 5-8. By then I'll know — from your feedback — what to emphasize, what to skim, what depth feels right for you.</p>
+      <p class="hint">If certain Month 1 lessons felt rushed or unclear, tell me which. Those are the candidates for slowing down at the start of Month 2.</p>
+    </div>
+
+  </main>
+
+  <script>
+    Lesson.init({ id: 'day-030', day: 30, title: 'Plan Month 2', estMin: 30 });
+
+    Exercises.render(document.getElementById('exercises'), [
+      {
+        q: "Honestly, how solid does Month 1 material feel?",
+        type: 'mcq',
+        options: [
+          'Most felt solid; a couple of lessons need a re-do.',
+          'Strong on math, weaker on algorithms (or vice versa).',
+          'Need to revisit several lessons before Month 2.',
+          'Comfortable across the board.',
+        ],
+        answer: 3,
+        explain: 'No wrong answer here — but note which one you picked. If "need to revisit" or "weaker on something," do that BEFORE Month 2, not during. The cost of solid foundations is small, the cost of weak ones compounds.',
+      },
+      {
+        q: "Which Month 2 side project will you commit to?",
+        type: 'mcq',
+        options: [
+          'Kaggle Titanic with my own logistic regression code.',
+          'Reproduce a small paper figure.',
+          'Real optimization problem from work, solved via MILP.',
+          'Haven\'t decided yet — will pick before Month 2 starts.',
+        ],
+        answer: 0,
+        explain: 'No wrong answer. But: pick now, even if tentatively. Concrete commitment improves follow-through significantly. You can always switch in Week 6 if it isn\'t working.',
+      },
+      {
+        q: "Most important habit to preserve into Month 2:",
+        type: 'mcq',
+        options: [
+          'The 10-min daily arithmetic drill.',
+          'Sleeping 8 hours.',
+          'Reviewing the previous day\'s lesson.',
+          'Tracking your progress.',
+        ],
+        answer: 0,
+        explain: 'The arithmetic drill is the lowest-cost, highest-return habit. It keeps the mental-math muscle alive AND keeps the daily streak alive. If you skip everything else for a day, do this.',
+      },
+      {
+        q: "How many Project Euler problems will you target by end of Month 2?",
+        type: 'mcq',
+        options: ['10+', '25+', '50+', '100+'],
+        answer: 1,
+        explain: '25+ is the right pace per the curriculum. ~6 per week. Don\'t skip ahead in problem numbers — solve in order so the difficulty grows.',
+      },
+      {
+        q: "When will you start Month 2?",
+        type: 'mcq',
+        options: [
+          'Tomorrow.',
+          'In 2-3 days after consolidation break.',
+          'Next week.',
+          'When I feel ready.',
+        ],
+        answer: 1,
+        explain: 'Best practice: short break to consolidate, but not so long that momentum dies. 2-3 days is a sweet spot. Keep the arithmetic drill during the break.',
+      },
+    ]);
+  </script>
+</body>
+</html>

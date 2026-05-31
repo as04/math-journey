@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Day 16 — Linear Combinations &amp; Span</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="../assets/lesson.js"></script>
+</head>
+<body>
+  <main class="container">
+
+    <div class="panel">
+      <h3 style="margin-top:0">From basis to span (the geometric flip)</h3>
+      <p>Day 15 said "basis = vectors that span the space." Today: what does <em>span</em> mean, exactly?</p>
+      <p>A <strong>linear combination</strong> of vectors v₁, ..., vₖ is any expression <span class="mono">c₁v₁ + c₂v₂ + ... + cₖvₖ</span> for real numbers cᵢ. The <strong>span</strong> of those vectors is the set of <em>all possible</em> linear combinations — every point you can reach.</p>
+      <p>So "basis of ℝ²" means: a set of vectors whose span is all of ℝ², with no redundancy.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">The shapes a span can take in 2D</h3>
+      <ul>
+        <li><strong>No vectors:</strong> span = {0}. Just the origin.</li>
+        <li><strong>One non-zero vector:</strong> span = a line through the origin.</li>
+        <li><strong>Two parallel vectors:</strong> still just a line (the second adds nothing).</li>
+        <li><strong>Two non-parallel vectors:</strong> all of ℝ². They form a basis.</li>
+      </ul>
+      <p>In 3D it scales up: 1 vector → line; 2 independent → plane; 3 independent → all of ℝ³. The pattern continues.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Interactive: drag vectors, watch their span</h3>
+      <p>Two vectors. Drag the tips. The shaded region shows every point in their span — every linear combination you could form. If the vectors become parallel (or one becomes zero), watch the span collapse from a plane to a line.</p>
+
+      <canvas id="canvas" width="500" height="500" style="width:100%; max-width:500px; margin: 0 auto; cursor: grab;"></canvas>
+
+      <p class="muted" style="text-align: center; margin-top: 8px;">drag the dots at the tips of <span style="color:#7cc4ff">v₁</span> and <span style="color:#ff7a7a">v₂</span></p>
+
+      <table style="width:100%; max-width: 500px; margin: 12px auto 0;">
+        <tr><th>quantity</th><th>value</th></tr>
+        <tr><td class="mono">v₁</td><td class="mono" id="v1">(2, 1)</td></tr>
+        <tr><td class="mono">v₂</td><td class="mono" id="v2">(1, 2)</td></tr>
+        <tr><td>determinant (v₁ × v₂ cross)</td><td class="mono" id="cross">3</td></tr>
+        <tr><td>span</td><td class="mono" id="spantype">ℝ² (full plane)</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Why this matters for ML</h3>
+      <ul>
+        <li><strong>Feature design:</strong> if your features are linearly dependent, they don't add information — the model "sees" the same span. This is why correlated features can hurt regularized models.</li>
+        <li><strong>Embeddings:</strong> word/user/item embeddings live in some span. The dimension of that span is the "effective" capacity of your model.</li>
+        <li><strong>PCA:</strong> finds the directions along which your data's span is "thickest" — and projects onto a basis aligned to those.</li>
+        <li><strong>Solving Ax = b (tomorrow's lesson):</strong> has a solution iff b is in the span of A's columns. That's literally the geometric meaning.</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Exercises</h3>
+      <div id="exercises"></div>
+    </div>
+
+  </main>
+
+  <script>
+    Lesson.init({ id: 'day-016', day: 16, title: 'Linear Combinations & Span', estMin: 30 });
+
+    const $ = id => document.getElementById(id);
+    const canvas = $('canvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const SCALE = 50, cx = W/2, cy = H/2;
+    const toScreen = (x, y) => [cx + x * SCALE, cy - y * SCALE];
+    const fromScreen = (sx, sy) => [(sx - cx) / SCALE, -(sy - cy) / SCALE];
+
+    let v1 = { x: 2, y: 1 };
+    let v2 = { x: 1, y: 2 };
+    let drag = null;
+
+    function cross(a, b) { return a.x * b.y - a.y * b.x; }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      ctx.strokeStyle = '#2a2f3a';
+      for (let i = -5; i <= 5; i++) {
+        ctx.beginPath(); ctx.moveTo(...toScreen(i,-5)); ctx.lineTo(...toScreen(i,5)); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(...toScreen(-5,i)); ctx.lineTo(...toScreen(5,i)); ctx.stroke();
+      }
+
+      // span visualization
+      const c = cross(v1, v2);
+      if (Math.abs(c) < 0.05) {
+        // span is a line (or origin)
+        const v = Math.hypot(v1.x, v1.y) > 0.01 ? v1 : v2;
+        if (Math.hypot(v.x, v.y) > 0.01) {
+          const norm = Math.hypot(v.x, v.y);
+          const s = 20 / norm;
+          ctx.strokeStyle = '#6ee7a3';
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.moveTo(...toScreen(-v.x*s, -v.y*s));
+          ctx.lineTo(...toScreen(v.x*s, v.y*s));
+          ctx.stroke();
+        }
+      } else {
+        // span is the whole plane — shade lightly
+        ctx.fillStyle = 'rgba(110, 231, 163, 0.08)';
+        ctx.fillRect(0, 0, W, H);
+        // also draw the parallelogram formed by v1, v2 brightly
+        ctx.fillStyle = 'rgba(110, 231, 163, 0.22)';
+        ctx.beginPath();
+        ctx.moveTo(...toScreen(0, 0));
+        ctx.lineTo(...toScreen(v1.x, v1.y));
+        ctx.lineTo(...toScreen(v1.x + v2.x, v1.y + v2.y));
+        ctx.lineTo(...toScreen(v2.x, v2.y));
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // axes
+      ctx.strokeStyle = '#9aa0aa';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(0,cy); ctx.lineTo(W,cy); ctx.moveTo(cx,0); ctx.lineTo(cx,H); ctx.stroke();
+
+      // arrows
+      drawArrow(v1, '#7cc4ff', 'v₁');
+      drawArrow(v2, '#ff7a7a', 'v₂');
+    }
+
+    function drawArrow(v, color, label) {
+      const [x1, y1] = toScreen(0, 0);
+      const [x2, y2] = toScreen(v.x, v.y);
+      ctx.strokeStyle = color; ctx.fillStyle = color;
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+      const ang = Math.atan2(y2-y1, x2-x1);
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - 12*Math.cos(ang-0.4), y2 - 12*Math.sin(ang-0.4));
+      ctx.lineTo(x2 - 12*Math.cos(ang+0.4), y2 - 12*Math.sin(ang+0.4));
+      ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.arc(x2, y2, 7, 0, Math.PI*2); ctx.fill();
+      ctx.font = '700 14px monospace';
+      ctx.fillText(label, x2 + 12, y2 - 10);
+    }
+
+    canvas.addEventListener('mousedown', e => {
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) * (W / rect.width);
+      const y = (e.clientY - rect.top) * (H / rect.height);
+      const [v1tx, v1ty] = toScreen(v1.x, v1.y);
+      const [v2tx, v2ty] = toScreen(v2.x, v2.y);
+      if (Math.hypot(x - v1tx, y - v1ty) < 14) drag = 'v1';
+      else if (Math.hypot(x - v2tx, y - v2ty) < 14) drag = 'v2';
+    });
+    canvas.addEventListener('mousemove', e => {
+      if (!drag) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) * (W / rect.width);
+      const y = (e.clientY - rect.top) * (H / rect.height);
+      const [mx, my] = fromScreen(x, y);
+      const target = drag === 'v1' ? v1 : v2;
+      target.x = Math.round(mx * 10) / 10;
+      target.y = Math.round(my * 10) / 10;
+      update();
+    });
+    canvas.addEventListener('mouseup', () => { drag = null; });
+
+    function update() {
+      $('v1').textContent = `(${v1.x.toFixed(1)}, ${v1.y.toFixed(1)})`;
+      $('v2').textContent = `(${v2.x.toFixed(1)}, ${v2.y.toFixed(1)})`;
+      const c = cross(v1, v2);
+      $('cross').textContent = c.toFixed(2);
+      $('spantype').textContent = Math.abs(c) < 0.05
+        ? (Math.hypot(v1.x, v1.y) < 0.01 && Math.hypot(v2.x, v2.y) < 0.01 ? 'just the origin' : 'a line through origin')
+        : 'ℝ² (full plane)';
+      draw();
+    }
+    update();
+
+    Exercises.render($('exercises'), [
+      {
+        q: "What's the linear combination 2·(1, 0) + 3·(0, 1)?",
+        type: 'mcq',
+        options: ['(2, 3)', '(3, 2)', '(5, 5)', '(6, 0)'],
+        answer: 0,
+        explain: '2·(1,0) + 3·(0,1) = (2, 0) + (0, 3) = (2, 3). Linear combination with the standard basis just gives you back the coordinates as the result.',
+      },
+      {
+        q: "Span of {(1, 1)} is:",
+        type: 'mcq',
+        options: ['The whole plane ℝ²', 'The line y = x', 'The line y = -x', 'Just the point (1, 1)'],
+        answer: 1,
+        explain: 'All scalar multiples of (1,1): (0,0), (1,1), (2,2), (-1,-1), ... — that\'s the line through origin with slope 1, i.e., y = x.',
+      },
+      {
+        q: "Span of {(1, 0), (2, 0)} is:",
+        type: 'mcq',
+        options: ['The whole plane', 'The x-axis', 'The y-axis', 'The line y = x'],
+        answer: 1,
+        explain: 'Both vectors lie on the x-axis. (2, 0) = 2 × (1, 0), so the second adds no new direction. Span is just the x-axis.',
+      },
+      {
+        q: "Is (3, 5) in the span of {(1, 0), (0, 1)}?",
+        type: 'mcq',
+        options: ['No', 'Yes — write it as 3·(1,0) + 5·(0,1)', 'Only if scaled', 'Maybe'],
+        answer: 1,
+        explain: 'Standard basis spans all of ℝ². Every vector (a, b) = a·(1,0) + b·(0,1). Here: 3·(1,0) + 5·(0,1) = (3, 5).',
+      },
+      {
+        q: "The span of {(1, 2), (2, 4), (3, 6)} is:",
+        type: 'mcq',
+        options: ['ℝ²', 'A line (these are all parallel)', 'A plane', 'Three separate lines'],
+        answer: 1,
+        explain: 'All three are multiples of (1, 2). They\'re collinear. Their span is just the line through origin in the direction (1, 2). Adding more parallel vectors never extends the span.',
+      },
+    ]);
+  </script>
+</body>
+</html>

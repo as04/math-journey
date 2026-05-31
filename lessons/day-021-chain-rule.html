@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Day 21 — The Chain Rule</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="../assets/lesson.js"></script>
+</head>
+<body>
+  <main class="container">
+
+    <div class="panel">
+      <h3 style="margin-top:0">The most important rule in calculus</h3>
+      <p>Backpropagation is just the chain rule applied carefully. Every modern ML system runs on the chain rule. So this is the calculus rule you most need to deeply understand, not memorize.</p>
+      <p>Today: derive it from limits, see it visually, and connect it to its role in ML.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">The statement</h3>
+      <p>If f and g are functions and h(x) = f(g(x)), then:</p>
+      <p class="mono center" style="font-size: 1.15rem;">h'(x) = f'(g(x)) · g'(x)</p>
+      <p>In words: <strong>"derivative of outer (at inner) times derivative of inner."</strong></p>
+      <p>The Leibniz notation is even cleaner. If y = f(u) and u = g(x), then:</p>
+      <p class="mono center" style="font-size: 1.15rem;">dy/dx = dy/du · du/dx</p>
+      <p>The "du" pretends to cancel like a fraction. Pretend-cancellation is a powerful intuition device, even though dy/dx isn't <em>actually</em> a fraction.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Why it's true (the intuitive derivation)</h3>
+      <p>Look at the rate-of-change definition:</p>
+      <p class="mono">h'(x) = lim (f(g(x+h)) − f(g(x))) / h</p>
+      <p>Multiply numerator and denominator by (g(x+h) − g(x)):</p>
+      <p class="mono">= lim [ (f(g(x+h)) − f(g(x))) / (g(x+h) − g(x)) ] · [ (g(x+h) − g(x)) / h ]</p>
+      <p>As h → 0: g(x+h) → g(x), so the first bracket → f'(g(x)), and the second → g'(x). Done.</p>
+      <p class="muted">(This sketch hides some technicalities — what if g(x+h) − g(x) = 0? — that real analysis cleans up. The intuition is correct.)</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Worked examples</h3>
+      <table style="width:100%">
+        <tr><th>h(x)</th><th>outer f</th><th>inner g</th><th>h'(x)</th></tr>
+        <tr><td class="mono">sin(x²)</td><td class="mono">sin</td><td class="mono">x²</td><td class="mono">cos(x²) · 2x</td></tr>
+        <tr><td class="mono">e^(3x)</td><td class="mono">eᵤ</td><td class="mono">3x</td><td class="mono">e^(3x) · 3</td></tr>
+        <tr><td class="mono">(2x + 1)⁵</td><td class="mono">u⁵</td><td class="mono">2x + 1</td><td class="mono">5(2x+1)⁴ · 2</td></tr>
+        <tr><td class="mono">ln(cos(x))</td><td class="mono">ln(u)</td><td class="mono">cos(x)</td><td class="mono">(1/cos(x)) · (−sin(x)) = −tan(x)</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Interactive: see chain-rule numerically</h3>
+      <p>Pick an outer function f and an inner g. The widget plots h(x) = f(g(x)) and verifies the chain rule numerically by computing both sides.</p>
+
+      <div class="row">
+        <label class="mono">outer f(u) =</label>
+        <select id="outer">
+          <option value="sin">sin(u)</option>
+          <option value="exp">e^u</option>
+          <option value="sq">u²</option>
+        </select>
+        <label class="mono">inner g(x) =</label>
+        <select id="inner">
+          <option value="x2">x²</option>
+          <option value="2x">2x + 1</option>
+          <option value="sin">sin(x)</option>
+        </select>
+        <label class="mono">x =</label>
+        <input type="number" id="x" value="1" step="0.1" style="width: 80px;">
+      </div>
+
+      <table style="width:100%; margin-top: 14px;">
+        <tr><th>quantity</th><th>value</th></tr>
+        <tr><td>g(x)</td><td class="mono" id="gx">—</td></tr>
+        <tr><td>g'(x)</td><td class="mono" id="dgx">—</td></tr>
+        <tr><td>f(g(x))</td><td class="mono" id="fgx">—</td></tr>
+        <tr><td>f'(g(x))</td><td class="mono" id="dfgx">—</td></tr>
+        <tr><td><strong>chain rule: f'(g(x)) · g'(x)</strong></td><td class="mono" id="chain">—</td></tr>
+        <tr><td>numerical derivative (sanity check)</td><td class="mono" id="numder">—</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Why this matters for backprop</h3>
+      <p>A neural network is a composition of functions: <span class="mono">y = f_n(f_{n−1}(...f_1(x)))</span>. Each layer is a function. The loss is a function of the final output.</p>
+      <p>To train, you need ∂loss/∂weight for every weight in every layer. By the chain rule, this is a product of local derivatives — one per layer between the loss and the weight. Backpropagation is just the algorithm that computes those chained products efficiently (reusing intermediate values).</p>
+      <p>Modern frameworks (PyTorch, JAX) do this automatically — but knowing what they're doing under the hood is the difference between a user and an engineer.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Exercises</h3>
+      <div id="exercises"></div>
+    </div>
+
+  </main>
+
+  <script>
+    Lesson.init({ id: 'day-021', day: 21, title: 'The Chain Rule', estMin: 30 });
+
+    const $ = id => document.getElementById(id);
+
+    const outers = {
+      sin: { f: Math.sin, df: Math.cos },
+      exp: { f: Math.exp, df: Math.exp },
+      sq:  { f: u => u*u, df: u => 2*u },
+    };
+    const inners = {
+      x2:  { g: x => x*x, dg: x => 2*x },
+      '2x': { g: x => 2*x + 1, dg: () => 2 },
+      sin: { g: Math.sin, dg: Math.cos },
+    };
+
+    function update() {
+      const f = outers[$('outer').value];
+      const g = inners[$('inner').value];
+      const x = parseFloat($('x').value);
+      const gx = g.g(x);
+      const dgx = g.dg(x);
+      const fgx = f.f(gx);
+      const dfgx = f.df(gx);
+      const chain = dfgx * dgx;
+      // numerical derivative
+      const h = 1e-6;
+      const numder = (f.f(g.g(x + h)) - fgx) / h;
+      $('gx').textContent = gx.toFixed(4);
+      $('dgx').textContent = dgx.toFixed(4);
+      $('fgx').textContent = fgx.toFixed(4);
+      $('dfgx').textContent = dfgx.toFixed(4);
+      $('chain').textContent = chain.toFixed(4);
+      $('numder').textContent = numder.toFixed(4) + ' ' + (Math.abs(numder - chain) < 0.001 ? '✓' : '✗');
+    }
+    ['outer', 'inner', 'x'].forEach(id => $(id).addEventListener('input', update));
+    update();
+
+    Exercises.render($('exercises'), [
+      {
+        q: "Derivative of (3x + 2)⁴ at x = 1?",
+        type: 'numeric', answer: 1500, tol: 0,
+        explain: 'Outer: u⁴ → 4u³. Inner: 3x + 2 → 3. Chain: 4(3x+2)³ · 3. At x=1: 4 · 5³ · 3 = 4 · 125 · 3 = 1500.',
+      },
+      {
+        q: "Derivative of sin(x²) at x = 0?",
+        type: 'numeric', answer: 0, tol: 0.001,
+        explain: 'd/dx[sin(x²)] = cos(x²) · 2x. At x = 0: cos(0) · 0 = 0.',
+      },
+      {
+        q: "Derivative of e^(2x) at x = 0?",
+        type: 'numeric', answer: 2, tol: 0.001,
+        explain: 'd/dx[e^(2x)] = e^(2x) · 2. At x=0: e⁰ · 2 = 1 · 2 = 2.',
+      },
+      {
+        q: "Chain rule states: d/dx[f(g(x))] = ?",
+        type: 'mcq',
+        options: [
+          'f\'(x) · g\'(x)',
+          'f\'(g(x)) · g\'(x)',
+          'f(g\'(x))',
+          'f(x) · g(x)',
+        ],
+        answer: 1,
+        explain: 'Derivative of OUTER evaluated at INNER, TIMES derivative of INNER. f\'(g(x)) · g\'(x). Memorize the phrasing; it makes the formula natural.',
+      },
+      {
+        q: "Why is the chain rule the backbone of backpropagation?",
+        type: 'mcq',
+        options: [
+          'Because backprop has no math.',
+          'Because a neural network is a composition of functions, and chain rule gives the gradient through the composition.',
+          'Because chain rule is the only derivative rule.',
+          'Because TensorFlow says so.',
+        ],
+        answer: 1,
+        explain: 'A NN computes y = f_n(f_{n-1}(...f_1(x))). Loss gradient w.r.t. any weight requires chaining through all layers between the weight and the loss. Backprop = chain rule applied with shared intermediate computation.',
+      },
+    ]);
+  </script>
+</body>
+</html>

@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Day 15 — Vector Spaces, Basis, Dimension</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="../assets/lesson.js"></script>
+</head>
+<body>
+  <main class="container">
+
+    <div class="panel">
+      <h3 style="margin-top:0">From "arrows" to a real algebraic structure</h3>
+      <p>Day 3 introduced vectors as arrows in 2D. Day 4 introduced matrices as transformations. Now: the structure those arrows live in — a <strong>vector space</strong> — and three ideas you'll use forever: <strong>linear independence, basis, dimension.</strong></p>
+      <p>Why now: every ML model thinks in terms of "the feature space," "the latent space," "the embedding space." Those are vector spaces. The dimension of a space tells you how many independent parameters you have. The basis tells you what coordinates mean. Without these, you'll forever be reading ML papers as a tourist.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Three definitions</h3>
+      <p><strong>Vector space (informal):</strong> a set V where you can add vectors and multiply by scalars, and the usual rules hold (associativity, distributivity, zero vector exists, etc.). Examples: ℝ², ℝ³, ℝⁿ, the space of polynomials, the space of functions on [0,1]. Most ML lives in ℝⁿ for some n.</p>
+      <p><strong>Linear independence:</strong> a set of vectors {v₁, v₂, ..., vₖ} is independent if no vector is a linear combination of the others. Equivalently: <span class="mono">c₁v₁ + c₂v₂ + ... + cₖvₖ = 0</span> forces all cᵢ = 0.</p>
+      <p><strong>Basis:</strong> a linearly independent set that spans the whole space — meaning every vector in V can be written uniquely as a linear combination of the basis vectors.</p>
+      <p><strong>Dimension:</strong> the number of vectors in any basis of V. Doesn't depend on which basis you pick (theorem). ℝ² has dimension 2. ℝⁿ has dimension n.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">The geometric picture in 2D</h3>
+      <ul>
+        <li>One vector spans <strong>a line</strong> through the origin. (Dimension 1.)</li>
+        <li>Two <em>linearly independent</em> vectors span <strong>all of ℝ²</strong>. (Dimension 2.)</li>
+        <li>Two <em>linearly dependent</em> vectors span <strong>just a line</strong> — the second adds no new direction. (Dimension 1.)</li>
+        <li>Three vectors in ℝ² are <em>always</em> linearly dependent (you can't have 3 independent directions in a 2D space).</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Interactive: dimension of the span</h3>
+      <p>Add up to 3 vectors. The widget computes the dimension of their span (do they span a line, a plane, or just the origin?) and tells you whether they're linearly independent.</p>
+
+      <canvas id="canvas" width="500" height="500" style="width:100%; max-width:500px; margin: 0 auto;"></canvas>
+
+      <div id="vectorList" style="max-width: 500px; margin: 12px auto 0;"></div>
+      <div class="row" style="max-width: 500px; margin: 8px auto;">
+        <button id="addvec">+ add vector</button>
+        <button id="reset" class="secondary">reset</button>
+      </div>
+
+      <table style="width:100%; max-width: 500px; margin: 12px auto 0;">
+        <tr><th>quantity</th><th>value</th></tr>
+        <tr><td>vectors</td><td class="mono" id="numvec">0</td></tr>
+        <tr><td>linearly independent?</td><td class="mono" id="indep">—</td></tr>
+        <tr><td>dimension of span</td><td class="mono" id="dim">0</td></tr>
+        <tr><td>geometric meaning</td><td class="mono" id="meaning">empty</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Exercises</h3>
+      <div id="exercises"></div>
+    </div>
+
+  </main>
+
+  <script>
+    Lesson.init({ id: 'day-015', day: 15, title: 'Vector Spaces, Basis, Dimension', estMin: 30 });
+
+    const $ = id => document.getElementById(id);
+    const canvas = $('canvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const SCALE = 50, cx = W/2, cy = H/2;
+
+    let vectors = [{x:2,y:1},{x:1,y:2}];
+
+    const toScreen = (x, y) => [cx + x * SCALE, cy - y * SCALE];
+
+    function dimensionOfSpan(vecs) {
+      if (!vecs.length) return 0;
+      // gaussian elimination-ish: count independent vectors in 2D
+      const nonZero = vecs.filter(v => Math.hypot(v.x, v.y) > 0.01);
+      if (nonZero.length === 0) return 0;
+      // first non-zero gives dim ≥ 1
+      const v0 = nonZero[0];
+      // check if any other vector is not parallel
+      for (let i = 1; i < nonZero.length; i++) {
+        const cross = v0.x * nonZero[i].y - v0.y * nonZero[i].x;
+        if (Math.abs(cross) > 0.01) return 2;
+      }
+      return 1;
+    }
+
+    function isIndependent(vecs) {
+      return vecs.length === dimensionOfSpan(vecs);
+    }
+
+    function drawSpan(d, vecs) {
+      ctx.save();
+      if (d === 2) {
+        ctx.fillStyle = 'rgba(110, 231, 163, 0.10)';
+        ctx.fillRect(0, 0, W, H);
+      } else if (d === 1) {
+        const v = vecs.find(v => Math.hypot(v.x, v.y) > 0.01);
+        if (v) {
+          const norm = Math.hypot(v.x, v.y);
+          const s = 20 / norm;
+          ctx.strokeStyle = '#6ee7a3';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(...toScreen(-v.x*s, -v.y*s));
+          ctx.lineTo(...toScreen(v.x*s, v.y*s));
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      // grid
+      ctx.strokeStyle = '#2a2f3a';
+      ctx.lineWidth = 1;
+      for (let i = -5; i <= 5; i++) {
+        ctx.beginPath(); ctx.moveTo(...toScreen(i,-5)); ctx.lineTo(...toScreen(i,5)); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(...toScreen(-5,i)); ctx.lineTo(...toScreen(5,i)); ctx.stroke();
+      }
+      ctx.strokeStyle = '#9aa0aa';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(0,cy); ctx.lineTo(W,cy); ctx.moveTo(cx,0); ctx.lineTo(cx,H); ctx.stroke();
+
+      const d = dimensionOfSpan(vectors);
+      drawSpan(d, vectors);
+
+      const colors = ['#7cc4ff', '#ff7a7a', '#c47cff', '#ffb86b'];
+      vectors.forEach((v, i) => {
+        const [x1, y1] = toScreen(0, 0);
+        const [x2, y2] = toScreen(v.x, v.y);
+        ctx.strokeStyle = colors[i % colors.length];
+        ctx.fillStyle = colors[i % colors.length];
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+        const ang = Math.atan2(y2-y1, x2-x1);
+        ctx.beginPath();
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - 10*Math.cos(ang-0.4), y2 - 10*Math.sin(ang-0.4));
+        ctx.lineTo(x2 - 10*Math.cos(ang+0.4), y2 - 10*Math.sin(ang+0.4));
+        ctx.closePath(); ctx.fill();
+      });
+    }
+
+    function renderList() {
+      const cont = $('vectorList');
+      cont.innerHTML = '';
+      const colors = ['#7cc4ff', '#ff7a7a', '#c47cff', '#ffb86b'];
+      vectors.forEach((v, i) => {
+        const div = document.createElement('div');
+        div.className = 'row';
+        div.style.marginBottom = '4px';
+        div.innerHTML = `
+          <span class="mono" style="color: ${colors[i % colors.length]}; font-weight: 700;">v${i+1}:</span>
+          <span class="mono">x =</span>
+          <input type="number" step="0.5" value="${v.x}" data-i="${i}" data-k="x" style="width: 70px;">
+          <span class="mono">y =</span>
+          <input type="number" step="0.5" value="${v.y}" data-i="${i}" data-k="y" style="width: 70px;">
+          <button class="secondary" data-rem="${i}">×</button>
+        `;
+        cont.appendChild(div);
+      });
+      cont.querySelectorAll('input').forEach(inp => {
+        inp.addEventListener('input', e => {
+          const i = +e.target.dataset.i, k = e.target.dataset.k;
+          vectors[i][k] = parseFloat(e.target.value) || 0;
+          update();
+        });
+      });
+      cont.querySelectorAll('button[data-rem]').forEach(b => {
+        b.addEventListener('click', e => {
+          vectors.splice(+e.target.dataset.rem, 1);
+          renderList(); update();
+        });
+      });
+    }
+
+    function update() {
+      const d = dimensionOfSpan(vectors);
+      $('numvec').textContent = vectors.length;
+      $('indep').textContent = isIndependent(vectors) ? 'yes ✓' : 'no — at least one is a combination of others';
+      $('dim').textContent = d;
+      $('meaning').textContent = d === 0 ? 'just the origin' :
+                                 d === 1 ? 'a line through origin' :
+                                 'all of ℝ²';
+      draw();
+    }
+
+    $('addvec').addEventListener('click', () => {
+      if (vectors.length >= 4) return;
+      vectors.push({ x: Math.round(Math.random()*4-2), y: Math.round(Math.random()*4-2) });
+      renderList(); update();
+    });
+    $('reset').addEventListener('click', () => {
+      vectors = [{x:2,y:1},{x:1,y:2}];
+      renderList(); update();
+    });
+    renderList();
+    update();
+
+    Exercises.render($('exercises'), [
+      {
+        q: "What's the dimension of ℝ³?",
+        type: 'numeric', answer: 3, tol: 0,
+        explain: '3. The standard basis is {(1,0,0), (0,1,0), (0,0,1)}. Any basis of ℝ³ has exactly 3 elements.',
+      },
+      {
+        q: "Are the vectors (1, 2) and (2, 4) linearly independent?",
+        type: 'mcq',
+        options: ['Yes', 'No — (2,4) is 2×(1,2)', 'Yes, because they have different magnitudes', 'It depends on the basis chosen'],
+        answer: 1,
+        explain: '(2, 4) = 2 · (1, 2). One is a scalar multiple of the other — definition of linearly DEPENDENT. They span only a line, not all of ℝ².',
+      },
+      {
+        q: "How many vectors are needed for a basis of ℝ⁵?",
+        type: 'numeric', answer: 5, tol: 0,
+        explain: 'Exactly 5. The dimension of ℝⁿ is n, and every basis has exactly that many elements.',
+      },
+      {
+        q: "Three vectors in ℝ²:",
+        type: 'mcq',
+        options: [
+          'Are always linearly independent.',
+          'Are always linearly dependent.',
+          'Could be independent if chosen carefully.',
+          'Make a 3D space.',
+        ],
+        answer: 1,
+        explain: 'Dimension of ℝ² is 2. Any set of more than dim(V) vectors in V is linearly dependent. So 3 vectors in 2D — always dependent. (One can always be written as a combination of the other two, if those two span ℝ².)',
+      },
+      {
+        q: "The set {(1, 0, 0), (1, 1, 0), (1, 1, 1)} in ℝ³ is:",
+        type: 'mcq',
+        options: [
+          'Linearly dependent.',
+          'A basis for ℝ³.',
+          'Spans only a plane.',
+          'Spans only a line.',
+        ],
+        answer: 1,
+        explain: 'These three vectors are linearly independent (you can verify by computing the determinant of the matrix with these as columns = 1, non-zero). Three independent vectors in ℝ³ form a basis.',
+      },
+    ]);
+  </script>
+</body>
+</html>

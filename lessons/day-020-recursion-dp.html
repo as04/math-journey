@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Day 20 — Recursion + First DP Problem</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="../assets/lesson.js"></script>
+</head>
+<body>
+  <main class="container">
+
+    <div class="panel">
+      <h3 style="margin-top:0">Track C focus: the SWE-interview goldmine</h3>
+      <p>Recursion is one of those topics that splits programmers. Some find it natural; others find it disorienting. The cure is both — practice with simple examples until you trust the recursive call, and visualize the call tree to see why it works.</p>
+      <p>Today: recursion fundamentals, the infamous Fibonacci, the discovery that naïve recursion is wildly wasteful, and the fix: <strong>memoization</strong> — your first dynamic programming pattern. Every "DP" interview question is built on this base.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Recursion in one paragraph</h3>
+      <p>A recursive function calls itself on smaller versions of the same problem. Two parts:</p>
+      <ol>
+        <li><strong>Base case(s):</strong> the smallest inputs, where you return directly.</li>
+        <li><strong>Recursive case:</strong> reduce the problem to a smaller one (or several) and combine the results.</li>
+      </ol>
+      <pre class="mono" style="background:var(--panel-2); padding: 12px; border-radius: 6px;">def fib(n):
+    if n &lt;= 1: return n          # base case
+    return fib(n - 1) + fib(n - 2)  # recursive case
+</pre>
+      <p>Try fib(5). It calls fib(4) and fib(3). fib(4) calls fib(3) and fib(2). Soon you're recomputing fib(2) many times. That's the problem.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Watch the exponential explosion</h3>
+      <p>Pick n. Compute fib(n) naively vs. with memoization. Count the function calls. The naïve version is O(φⁿ) ≈ O(1.618ⁿ). The memoized version is O(n).</p>
+
+      <div class="row">
+        <label class="mono">n =</label>
+        <input type="number" id="n" value="10" min="0" max="35" style="width: 80px;">
+        <button id="runNaive">naïve</button>
+        <button id="runMemo">memoized</button>
+        <button id="runDP">bottom-up DP</button>
+      </div>
+
+      <table style="width:100%; margin-top: 12px;">
+        <tr><th>method</th><th>fib(n)</th><th>function calls</th><th>complexity</th></tr>
+        <tr><td>naïve recursion</td><td class="mono" id="naiveR">—</td><td class="mono" id="naiveC">—</td><td class="mono">O(φⁿ) ≈ O(1.618ⁿ)</td></tr>
+        <tr><td>memoized recursion</td><td class="mono" id="memoR">—</td><td class="mono" id="memoC">—</td><td class="mono">O(n) time, O(n) space</td></tr>
+        <tr><td>bottom-up DP</td><td class="mono" id="dpR">—</td><td class="mono" id="dpC">—</td><td class="mono">O(n) time, O(1) space</td></tr>
+      </table>
+      <p class="hint" style="margin-top: 12px;"><strong>Try n = 30 with naïve.</strong> It takes ~2 million calls and a noticeable amount of time. Memoized is instant. <strong>Try n = 35 naïve at your own risk — it can hang your tab.</strong></p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">The memoization pattern</h3>
+      <pre class="mono" style="background:var(--panel-2); padding: 12px; border-radius: 6px;">memo = {}
+def fib(n):
+    if n in memo: return memo[n]
+    if n &lt;= 1: return n
+    memo[n] = fib(n-1) + fib(n-2)
+    return memo[n]
+</pre>
+      <p>The change is tiny: cache results, look them up before recomputing. Complexity drops from exponential to linear. This is your <strong>first dynamic programming algorithm</strong> — top-down with memoization.</p>
+      <p>The <strong>bottom-up</strong> variant builds the table iteratively from the base cases — no recursion at all:</p>
+      <pre class="mono" style="background:var(--panel-2); padding: 12px; border-radius: 6px;">def fib(n):
+    if n &lt;= 1: return n
+    a, b = 0, 1
+    for _ in range(n - 1):
+        a, b = b, a + b
+    return b
+</pre>
+      <p>Same time complexity, but constant space. The bottom-up form is the "production" version.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Why DP works (the two conditions)</h3>
+      <ol>
+        <li><strong>Overlapping subproblems.</strong> The same subproblem appears many times. (fib(3) is computed many times in naïve fib(10).)</li>
+        <li><strong>Optimal substructure.</strong> The solution to the big problem is built from solutions to smaller subproblems.</li>
+      </ol>
+      <p>Most DP interview questions ask: "Can you spot these two conditions in the problem?" If yes, define <strong>state</strong> (what does each subproblem represent?) and <strong>transition</strong> (how do smaller solutions combine into a bigger one?). Memoize.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Exercises</h3>
+      <div id="exercises"></div>
+    </div>
+
+  </main>
+
+  <script>
+    Lesson.init({ id: 'day-020', day: 20, title: 'Recursion + First DP', estMin: 30 });
+
+    const $ = id => document.getElementById(id);
+
+    let naiveCount = 0;
+    function fibNaive(n) {
+      naiveCount++;
+      if (n <= 1) return n;
+      return fibNaive(n-1) + fibNaive(n-2);
+    }
+
+    let memoCount = 0;
+    function fibMemo(n, memo = {}) {
+      memoCount++;
+      if (n in memo) return memo[n];
+      if (n <= 1) return n;
+      memo[n] = fibMemo(n-1, memo) + fibMemo(n-2, memo);
+      return memo[n];
+    }
+
+    let dpCount = 0;
+    function fibDP(n) {
+      if (n <= 1) { dpCount++; return n; }
+      let a = 0, b = 1;
+      for (let i = 1; i < n; i++) {
+        const c = a + b; a = b; b = c;
+        dpCount++;
+      }
+      return b;
+    }
+
+    $('runNaive').addEventListener('click', () => {
+      const n = parseInt($('n').value, 10);
+      if (n > 35) { alert('refuse: would crash your browser'); return; }
+      naiveCount = 0;
+      const r = fibNaive(n);
+      $('naiveR').textContent = r;
+      $('naiveC').textContent = naiveCount.toLocaleString();
+    });
+    $('runMemo').addEventListener('click', () => {
+      const n = parseInt($('n').value, 10);
+      memoCount = 0;
+      const r = fibMemo(n);
+      $('memoR').textContent = r;
+      $('memoC').textContent = memoCount.toLocaleString();
+    });
+    $('runDP').addEventListener('click', () => {
+      const n = parseInt($('n').value, 10);
+      dpCount = 0;
+      const r = fibDP(n);
+      $('dpR').textContent = r;
+      $('dpC').textContent = dpCount.toLocaleString();
+    });
+
+    Exercises.render($('exercises'), [
+      {
+        q: "fib(10) (Fibonacci with fib(0)=0, fib(1)=1)?",
+        type: 'numeric', answer: 55, tol: 0,
+        explain: 'Sequence: 0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55. fib(10) = 55.',
+      },
+      {
+        q: "Naïve recursive fib(30) makes roughly how many function calls?",
+        type: 'mcq',
+        options: ['~30', '~900', '~2 million', '~1 billion'],
+        answer: 2,
+        explain: 'About 2.7 million. The number of calls grows as φⁿ ≈ 1.618ⁿ. At n=30, ~2.7M calls. With memoization, ~30. Worth feeling the difference.',
+      },
+      {
+        q: "Two conditions for dynamic programming to apply:",
+        type: 'mcq',
+        options: [
+          'Recursion and a loop.',
+          'Overlapping subproblems and optimal substructure.',
+          'Memoization and base case.',
+          'Linear time and linear space.',
+        ],
+        answer: 1,
+        explain: 'Overlapping subproblems (same subproblem appears many times) + optimal substructure (big solution = combination of small solutions). When both hold, memoize.',
+      },
+      {
+        q: "Memoized fib(n) has time complexity:",
+        type: 'mcq',
+        options: ['O(2ⁿ)', 'O(n²)', 'O(n)', 'O(log n)'],
+        answer: 2,
+        explain: 'Each value fib(k) for k from 0 to n is computed exactly once. O(n) total work. Memoization collapsed the exponential to linear.',
+      },
+      {
+        q: "Bottom-up DP for fib(n) uses how much extra space (asymptotically)?",
+        type: 'mcq',
+        options: ['O(n)', 'O(log n)', 'O(1)', 'O(n²)'],
+        answer: 2,
+        explain: 'O(1). You only need to keep the previous two Fibonacci numbers at any moment. Memoized recursion uses O(n) space (the cache). Bottom-up beats memoized on space for this problem.',
+      },
+    ]);
+  </script>
+</body>
+</html>
