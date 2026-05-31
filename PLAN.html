@@ -11,199 +11,167 @@
             text-transform: uppercase; letter-spacing: 0.04em; }
     .pill.built { background: var(--good); color: #0a0d12; }
     .pill.queued { background: var(--panel-2); color: var(--muted); border: 1px solid var(--border); }
-    .pill.active { background: var(--accent); color: #0a0d12; }
+    .track-pill { font-family: var(--mono); font-size: 0.75rem; background: var(--panel-2);
+                  color: var(--accent); padding: 1px 7px; border-radius: 4px; border: 1px solid var(--border); }
     table.month-table th { white-space: nowrap; }
     table.month-table td:first-child { white-space: nowrap; font-family: var(--mono); color: var(--accent-2); font-weight: 700; }
-    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    @media (max-width: 700px) { .two-col { grid-template-columns: 1fr; } }
-    .track-card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 18px; }
-    .track-card h3 { margin-top: 0; }
-    .track-card .time { color: var(--accent); font-family: var(--mono); font-weight: 700; }
-    ol li, ul li { margin: 4px 0; }
+    .grid-tracks { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+    .track-card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+    .track-card h3 { margin: 4px 0 8px; }
+    .track-card .time { color: var(--accent); font-family: var(--mono); font-weight: 700; font-size: 0.9rem; }
+    .track-card .letter { display: inline-block; background: var(--accent); color: #0a0d12;
+                          width: 26px; height: 26px; border-radius: 50%; text-align: center; line-height: 26px;
+                          font-weight: 700; margin-right: 8px; }
     .toc { background: var(--panel); border-left: 3px solid var(--accent); padding: 12px 18px; margin: 16px 0; border-radius: 0 8px 8px 0; }
     .toc a { display: inline-block; margin-right: 14px; font-family: var(--mono); font-size: 0.9rem; }
+    .callout { background: rgba(255, 184, 107, 0.08); border-left: 3px solid var(--accent-2);
+               padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 14px 0; }
   </style>
 </head>
 <body>
   <main class="container">
-    <h1>Math Journey — The Plan</h1>
-    <p class="tagline">A 45-min-a-day, applied-first path to rebuilding math fluency, all the way to MSc-level intuition. Useful at work in month 1.</p>
+    <h1>The Plan — Math Journey</h1>
+    <p class="tagline">45 min/day. Backend SWE today → ML/DS competence → Google interview-ready. Project Euler as signal.</p>
 
     <div class="toc">
       <strong>Jump to:</strong>
-      <a href="#how">How it works</a>
+      <a href="#tracks">The 4 tracks</a>
+      <a href="#calibration">Google calibration</a>
       <a href="#outcomes">Monthly outcomes</a>
-      <a href="#month1">Month 1 day-by-day</a>
+      <a href="#week1">Week 1 day-by-day</a>
       <a href="#routine">Daily routine</a>
-      <a href="#progress">What's built</a>
+      <a href="#built">What's built</a>
       <a href="#start">Start today</a>
     </div>
 
-    <h2 id="how">How this works</h2>
-
-    <p>Most people who try to "get good at math again" pick up a textbook, study heroically for two weekends, then quit. This plan is the opposite: <strong>short daily lessons, in your browser, with measurable monthly skill gains so you stay motivated.</strong></p>
-
-    <div class="two-col">
+    <h2 id="tracks">The four daily tracks</h2>
+    <p>Every day touches 2–3 of these. Lessons embed Tracks B and C in one ~35-min sitting.</p>
+    <div class="grid-tracks">
       <div class="track-card">
-        <div class="time">10 min / day · forever</div>
-        <h3>Track A — Fluency drill</h3>
-        <p>Mental arithmetic, every day. This kills the "fear of math" layer in week 1 and prevents it from coming back. <a href="lessons/arithmetic-drill.html">Open the drill →</a></p>
+        <div class="time">10 min · DAILY</div>
+        <h3><span class="letter">A</span>Fluency</h3>
+        <p>Mental arithmetic. Forever. Kills the fear layer in week 1. <a href="lessons/arithmetic-drill.html">Open drill →</a></p>
       </div>
       <div class="track-card">
-        <div class="time">30–35 min / day</div>
-        <h3>Track B — Today's lesson</h3>
-        <p>One interactive lesson per day, ordered to build on the previous. Hands-on widget + auto-graded exercises. ~180 lessons over 6 months. <a href="index.html">Open the hub →</a></p>
+        <div class="time">20 min · DAILY</div>
+        <h3><span class="letter">B</span>Math concept</h3>
+        <p>Linear algebra · probability · calculus · optimization. Foundation for ML Eng + Research.</p>
+      </div>
+      <div class="track-card">
+        <div class="time">15 min · DAILY</div>
+        <h3><span class="letter">C</span>Algorithms + PE</h3>
+        <p>Alternates: an algorithm/DS topic for SWE prep AND Project Euler problems weekly.</p>
+      </div>
+      <div class="track-card">
+        <div class="time">+60 min · SAT</div>
+        <h3><span class="letter">D</span>Side project</h3>
+        <p>Saturday extends into shipping something. Your GitHub becomes proof for Google.</p>
       </div>
     </div>
 
-    <h2 id="outcomes">What you can do at the end of each month</h2>
+    <h2 id="calibration">Honest calibration on Google paths</h2>
+    <p>Different roles need different things. The math curriculum optimizes for the SWE + ML-Eng intersection.</p>
+    <table style="width:100%">
+      <tr><th>Path</th><th>Realistic timeline</th><th>What the math gets you</th></tr>
+      <tr>
+        <td><strong>SWE L4</strong></td>
+        <td>6–18 months</td>
+        <td>Math is light here; algorithms + Big-O + discrete math matter most. Project Euler practice IS the math practice for this path.</td>
+      </tr>
+      <tr>
+        <td><strong>ML Engineer</strong></td>
+        <td>12–24 months + portfolio</td>
+        <td>This is where the math plan helps most directly. Linear algebra, calc, prob/stats, optimization, PyTorch fluency.</td>
+      </tr>
+      <tr>
+        <td><strong>Research (Brain/DeepMind)</strong></td>
+        <td>Multi-year — usually needs PhD or published work</td>
+        <td>Math is <em>necessary but not sufficient</em>. To go this route, plan to <strong>publish</strong> (workshops count) or replicate SOTA papers publicly. The math journey is your foundation; the publications are the proof.</td>
+      </tr>
+    </table>
+    <div class="callout">
+      <strong>If Research is the real goal:</strong> in parallel with this curriculum, plan to (a) replicate one published ML paper end-to-end every 2–3 months starting Month 4, (b) start a technical blog by Month 4, (c) by Month 12 begin contributing to an open-source ML project. Math alone won't get you in; output will.
+    </div>
 
-    <p>Each row below is the <em>concrete real-world skill set</em> you walk away with at that milestone. Not "you'll know X topic" — "you can do X thing."</p>
-
+    <h2 id="outcomes">Monthly outcomes</h2>
+    <p>Each row is the <em>concrete</em> skill set at that milestone. Not "you'll know X" — "you can do X."</p>
     <table class="month-table" style="width:100%">
-      <tr>
-        <th>Month</th>
-        <th>Theme</th>
-        <th>What you can do at the end</th>
-      </tr>
-      <tr>
-        <td>1</td>
-        <td><strong>Useful at work</strong></td>
-        <td>Fermi estimates in meetings without anxiety · read ML notation · explain mean/median/std correctly · apply Bayes' rule · predict what a 2×2 matrix does to space · use vectors as similarity · spot bad statistics in articles.</td>
-      </tr>
-      <tr>
-        <td>2</td>
-        <td><strong>Decision math</strong></td>
-        <td>Design &amp; power-analyze A/B tests · formulate scheduling/allocation as LP or MILP and solve with PuLP · interpret confidence intervals correctly · run a regression and read its output.</td>
-      </tr>
-      <tr>
-        <td>3</td>
-        <td><strong>ML &amp; strategic math</strong></td>
-        <td>Derive backprop on a small net by hand · implement gradient descent + logistic regression from scratch · apply PCA/SVD · compute Nash equilibrium for small games · model auctions/pricing.</td>
-      </tr>
-      <tr>
-        <td>4</td>
-        <td><strong>Bayesian + causal</strong></td>
-        <td>Run a Bayesian model in PyMC on real data · distinguish correlation from causation rigorously · apply diff-in-differences and regression discontinuity · follow econometrics papers.</td>
-      </tr>
-      <tr>
-        <td>5</td>
-        <td><strong>Proof literacy</strong></td>
-        <td>Read and write real proofs (ε-δ, induction, contradiction) · finish first 4 chapters of Abbott's <em>Understanding Analysis</em> · still shipping math at work weekly.</td>
-      </tr>
-      <tr>
-        <td>6</td>
-        <td><strong>Topology intuition</strong></td>
-        <td>Compactness/connectedness/fundamental group feel natural · finished <em>Shape of Space</em> · working through Armstrong or Munkres.</td>
-      </tr>
-      <tr>
-        <td>7–9</td>
-        <td><strong>Depth + capstone</strong></td>
-        <td>Abstract algebra (Pinter) · convex optimization (Boyd) · land a meaningful math-driven work project.</td>
-      </tr>
-      <tr>
-        <td>9–18</td>
-        <td><strong>Specialization</strong></td>
-        <td>Pick one: stats (Gelman BDA), numerical methods (Trefethen), econometrics (Wooldridge → Angrist), or pure math (Hatcher). Genuine strength in your chosen track.</td>
-      </tr>
+      <tr><th>Month</th><th>Theme</th><th>What you can do</th></tr>
+      <tr><td>1</td><td><strong>Foundations restart</strong></td>
+        <td>Fermi estimates · vector/matrix geometric intuition · Big-O intuition · basic discrete prob · NumPy fluency · <strong>10+ Project Euler</strong> · 1 small shipped side project.</td></tr>
+      <tr><td>2</td><td><strong>Probability + algorithms + first ML</strong></td>
+        <td>Prob/stats fluent · sorting/hashing/recursion/DP intro · linear algebra deep (SVD, eigen) · <strong>implement linear + logistic regression from scratch</strong> · 25+ PE.</td></tr>
+      <tr><td>3</td><td><strong>Calculus + first neural net</strong></td>
+        <td>Multivariable calc + gradients · <strong>derive backprop by hand</strong> · gradient descent variants · <strong>build a 2-layer net from scratch (NumPy)</strong> · convex opt intro · trees/graphs/DP depth · 40+ PE.</td></tr>
+      <tr><td>4</td><td><strong>PyTorch + portfolio</strong></td>
+        <td>PyTorch fluent · <strong>ship a real ML side project</strong> (Kaggle or paper replication) · info theory basics · causal inference basics · system-design probabilistic reasoning · 60+ PE.</td></tr>
+      <tr><td>5</td><td><strong>Real analysis + advanced ML</strong></td>
+        <td>Abbott analysis ch 1–4 · variational methods intro · RL math (Markov, MDPs, Bellman) · advanced algorithms · 80+ PE.</td></tr>
+      <tr><td>6</td><td><strong>Specialization + Google prep</strong></td>
+        <td>Commit direction (SWE-deep OR ML-Eng-paper-replication) · capstone project · mock interviews begin · 100+ PE.</td></tr>
+      <tr><td>7–12</td><td><strong>Become the candidate</strong></td>
+        <td>SWE: deep system design + LeetCode hards + behavioral. ML Eng: production ML side project + blog series + 2–3 paper replications. Research stretch: publish (workshop counts) or open-source contribute.</td></tr>
     </table>
 
-    <p class="muted"><em>After 18 months of 45-min days you are, by most reasonable definitions, strong at math — graduate level in your specialization.</em></p>
-
-    <h2 id="month1">Month 1 — day by day</h2>
-
-    <p>Each day is one self-contained HTML lesson. ~25–35 minutes. Open the file, do the widget, take the 5-question exercise check, click "mark complete." Your streak is tracked in the browser.</p>
-
-    <h3>Week 1 — Restart the engine</h3>
+    <h2 id="week1">Month 1 — Week 1 day-by-day</h2>
+    <p>Each day is one self-contained HTML lesson, ~25–35 min, embedded widget + 5-question exercise check.</p>
     <table style="width:100%">
-      <tr><th>Day</th><th>Lesson</th><th>What it teaches</th><th>Status</th></tr>
-      <tr><td class="mono">D01</td><td>Fermi estimation</td><td>Order-of-magnitude reasoning, decomposition, anchoring</td><td><span class="pill queued">queued</span></td></tr>
-      <tr><td class="mono">D02</td><td>Percentages, ratios, growth</td><td>% gotchas, compound growth, rule of 72, log thinking</td><td><span class="pill queued">queued</span></td></tr>
-      <tr><td class="mono">D03</td><td>Vectors as arrows</td><td>Vectors, magnitude, dot product as similarity</td><td><span class="pill queued">queued</span></td></tr>
-      <tr><td class="mono">D04</td><td>Matrices as transformations</td><td>2×2 matrix as a warping of the plane; det, eigenvectors</td><td><span class="pill built">widget built</span></td></tr>
-      <tr><td class="mono">D05</td><td>Summary statistics</td><td>Mean/median/std/IQR/percentiles — when each lies</td><td><span class="pill queued">queued</span></td></tr>
-      <tr><td class="mono">D06</td><td>The shape of randomness</td><td>Distributions: normal, uniform, exponential; CLT preview</td><td><span class="pill queued">queued</span></td></tr>
-      <tr><td class="mono">D07</td><td>Your first real estimate</td><td>Combine all of week 1 into a workplace ROI estimate</td><td><span class="pill queued">queued</span></td></tr>
-    </table>
-
-    <h3>Week 2 — Probability &amp; Bayes</h3>
-    <table style="width:100%">
-      <tr><th>Day</th><th>Lesson</th><th>What it teaches</th></tr>
-      <tr><td class="mono">D08</td><td>Sample spaces &amp; events</td><td>What probability <em>is</em>, not just rules</td></tr>
-      <tr><td class="mono">D09</td><td>Conditional probability</td><td>The renormalization view; common traps</td></tr>
-      <tr><td class="mono">D10</td><td>Bayes — naturally</td><td>Derive from definition; apply to workplace cases</td></tr>
-      <tr><td class="mono">D11</td><td>Random variables &amp; expectation</td><td>RVs, E[X], linearity of expectation</td></tr>
-      <tr><td class="mono">D12</td><td>Variance, std, covariance</td><td>Spread, joint behavior</td></tr>
-      <tr><td class="mono">D13</td><td>Independence vs uncorrelated</td><td>Two distinct concepts; common conflation</td></tr>
-      <tr><td class="mono">D14</td><td>Bayes-in-real-life capstone</td><td>Apply Bayes to disease tests, A/B significance</td></tr>
-    </table>
-
-    <h3>Week 3 — Linear algebra deeper + calculus warmup</h3>
-    <table style="width:100%">
-      <tr><th>Day</th><th>Lesson</th></tr>
-      <tr><td class="mono">D15</td><td>Vector spaces, basis, dimension</td></tr>
-      <tr><td class="mono">D16</td><td>Linear combinations &amp; span — geometric</td></tr>
-      <tr><td class="mono">D17</td><td>Solving Ax = b — what it means</td></tr>
-      <tr><td class="mono">D18</td><td>Determinant beyond 2×2 — area/volume scaling</td></tr>
-      <tr><td class="mono">D19</td><td>Limits &amp; rate of change — calculus restart</td></tr>
-      <tr><td class="mono">D20</td><td>Derivative as slope — interactive</td></tr>
-      <tr><td class="mono">D21</td><td>Chain rule — derive it, don't memorize</td></tr>
-    </table>
-
-    <h3>Week 4 — Putting it together: first ML math</h3>
-    <table style="width:100%">
-      <tr><th>Day</th><th>Lesson</th></tr>
-      <tr><td class="mono">D22</td><td>Gradient: direction of steepest ascent</td></tr>
-      <tr><td class="mono">D23</td><td>Gradient descent — by hand, then in code</td></tr>
-      <tr><td class="mono">D24</td><td>Linear regression from scratch</td></tr>
-      <tr><td class="mono">D25</td><td>Loss functions — squared, absolute, log</td></tr>
-      <tr><td class="mono">D26</td><td>Overfitting &amp; regularization intuition</td></tr>
-      <tr><td class="mono">D27</td><td>Cross-validation — why and how</td></tr>
-      <tr><td class="mono">D28</td><td>First ML capstone — predict something at work</td></tr>
-      <tr><td class="mono">D29</td><td>Month 1 review — re-derive 5 key results</td></tr>
-      <tr><td class="mono">D30</td><td>Month 1 capstone — apply to a real work problem</td></tr>
+      <tr><th>Day</th><th>Lesson</th><th>Tracks</th><th>What it teaches</th><th>Status</th></tr>
+      <tr><td class="mono">D01</td><td><a href="lessons/day-001-fermi.html">Fermi &amp; estimation</a></td>
+        <td><span class="track-pill">A</span> <span class="track-pill">B</span></td>
+        <td>Order-of-magnitude reasoning, decomposition, anchoring</td><td><span class="pill built">built</span></td></tr>
+      <tr><td class="mono">D02</td><td><a href="lessons/day-002-percentages.html">Percentages, growth, into Big-O thinking</a></td>
+        <td><span class="track-pill">A</span> <span class="track-pill">B</span> <span class="track-pill">C</span></td>
+        <td>% gotchas, compound growth, rule of 72, log thinking → bridge to Big-O</td><td><span class="pill built">built</span></td></tr>
+      <tr><td class="mono">D03</td><td><a href="lessons/day-003-vectors.html">Vectors as arrows</a></td>
+        <td><span class="track-pill">A</span> <span class="track-pill">B</span></td>
+        <td>Vectors, magnitude, dot product as similarity</td><td><span class="pill built">built</span></td></tr>
+      <tr><td class="mono">D04</td><td><a href="lessons/day-004-matrices.html">Matrices as transformations</a></td>
+        <td><span class="track-pill">A</span> <span class="track-pill">B</span></td>
+        <td>2×2 matrix warps space; det, eigenvectors (uses LA visualizer)</td><td><span class="pill built">built</span></td></tr>
+      <tr><td class="mono">D05</td><td><a href="lessons/day-005-complexity.html">Algorithm complexity — your first analysis</a></td>
+        <td><span class="track-pill">A</span> <span class="track-pill">C</span></td>
+        <td>Big-O notation, ranking common growth rates, reading code complexity</td><td><span class="pill built">built</span></td></tr>
+      <tr><td class="mono">D06</td><td><a href="lessons/day-006-counting.html">Discrete probability — counting &amp; sample spaces</a></td>
+        <td><span class="track-pill">A</span> <span class="track-pill">B</span></td>
+        <td>Sample spaces, events, P = |A|/|S|, combinations and permutations</td><td><span class="pill built">built</span></td></tr>
+      <tr><td class="mono">D07</td><td><a href="lessons/day-007-project-euler.html">Your first Project Euler problem, properly</a></td>
+        <td><span class="track-pill">A</span> <span class="track-pill">C</span></td>
+        <td>PE Problems 1 &amp; 2: brute force → math insight → optimized solution</td><td><span class="pill built">built</span></td></tr>
     </table>
 
     <h2 id="routine">Your daily routine</h2>
     <ol>
-      <li><strong>10 min — Track A:</strong> open <a href="lessons/arithmetic-drill.html">the arithmetic drill</a>, do 30 problems. Difficulty 2-digit × 2-digit by week 2.</li>
-      <li><strong>30 min — Track B:</strong> open <a href="index.html">the hub</a>, click today's lesson, do it end-to-end.</li>
-      <li><strong>30 seconds:</strong> click "mark today complete" at the bottom of the lesson. Your streak persists in the browser.</li>
+      <li><strong>10 min — Track A:</strong> <a href="lessons/arithmetic-drill.html">arithmetic drill</a>. 30 problems.</li>
+      <li><strong>30 min — Tracks B+C:</strong> <a href="index.html">open the hub</a>, do today's lesson.</li>
+      <li><strong>30 sec:</strong> click "mark today complete" at the bottom of the lesson.</li>
+      <li><strong>Saturday:</strong> add 60 min for Track D (side project work).</li>
     </ol>
-    <p class="hint">
-      <strong>The unbreakable rule:</strong> never skip two days in a row. One missed day is recoverable; two starts breaking the habit. If you genuinely can't do the full 45 min, do JUST the 10-min arithmetic drill — that alone keeps the streak.
-    </p>
+    <div class="callout">
+      <strong>The unbreakable rule:</strong> never skip two days in a row. If you can only do 10 min, do JUST the arithmetic drill — that alone keeps the streak.
+    </div>
 
-    <h2 id="progress">What's currently built in this repo</h2>
-
+    <h2 id="built">What's currently built</h2>
     <table style="width:100%">
       <tr><th>File</th><th>What it is</th><th>Status</th></tr>
-      <tr><td><a href="index.html">index.html</a></td><td>Daily hub — today's lesson + streak + week progress</td><td><span class="pill built">built</span></td></tr>
-      <tr><td><a href="PLAN.html">PLAN.html</a></td><td>This page — the whole plan, visually</td><td><span class="pill built">built</span></td></tr>
-      <tr><td><a href="README.md">README.md</a></td><td>Repo readme</td><td><span class="pill built">built</span></td></tr>
-      <tr><td><a href="CURRICULUM.md">CURRICULUM.md</a></td><td>Month-by-month plan (markdown)</td><td><span class="pill built">built</span></td></tr>
-      <tr><td><a href="ROADMAP.md">ROADMAP.md</a></td><td>Long-arc 6-phase reference plan</td><td><span class="pill built">built</span></td></tr>
-      <tr><td><a href="PHASE-0-arithmetic.md">PHASE-0-arithmetic.md</a> .. PHASE-5</td><td>Detailed phase reference docs</td><td><span class="pill built">built</span></td></tr>
-      <tr><td>assets/lesson.js</td><td>Shared progress/exercise scaffolding for lessons</td><td><span class="pill built">built</span></td></tr>
-      <tr><td>styles.css</td><td>Shared styling for hub + lessons</td><td><span class="pill built">built</span></td></tr>
-      <tr><td><a href="lessons/arithmetic-drill.html">lessons/arithmetic-drill.html</a></td><td>Daily mental-math drill</td><td><span class="pill built">built</span></td></tr>
-      <tr><td><a href="lessons/linear-algebra-transformations.html">lessons/linear-algebra-transformations.html</a></td><td>Matrix-as-transformation widget</td><td><span class="pill built">built</span></td></tr>
-      <tr><td><a href="lessons/lp-visualizer.html">lessons/lp-visualizer.html</a></td><td>LP / MILP visualizer (for month 2)</td><td><span class="pill built">built</span></td></tr>
-      <tr><td>lessons/day-001-*.html .. day-007-*.html</td><td>Week 1 daily lessons</td><td><span class="pill queued">to build next</span></td></tr>
-      <tr><td>lessons/day-008-*.html .. day-030-*.html</td><td>Weeks 2–4 daily lessons</td><td><span class="pill queued">to build after week 1</span></td></tr>
+      <tr><td><a href="index.html">index.html</a></td><td>Daily hub</td><td><span class="pill built">built</span></td></tr>
+      <tr><td><a href="PLAN.html">PLAN.html</a></td><td>This page</td><td><span class="pill built">built</span></td></tr>
+      <tr><td><a href="CURRICULUM.md">CURRICULUM.md</a></td><td>Month-by-month plan</td><td><span class="pill built">built</span></td></tr>
+      <tr><td><a href="ROADMAP.md">ROADMAP.md</a> + PHASE-0..5</td><td>Long-arc reference</td><td><span class="pill built">built</span></td></tr>
+      <tr><td>Week 1: Days 1–7</td><td>All 7 daily lessons</td><td><span class="pill built">built</span></td></tr>
+      <tr><td>Tools: arithmetic-drill, LA visualizer, LP visualizer</td><td>Standalone interactive widgets</td><td><span class="pill built">built</span></td></tr>
+      <tr><td>Days 8–30</td><td>Weeks 2–4 daily lessons</td><td><span class="pill queued">to build after week 1</span></td></tr>
     </table>
 
     <h2 id="start">How to start today</h2>
     <ol>
-      <li>Open <a href="lessons/arithmetic-drill.html">the arithmetic drill</a>. Do 30 problems at 2-digit difficulty. Don't worry about speed yet — accuracy first.</li>
-      <li>Open the matrix transformation lesson: <a href="lessons/linear-algebra-transformations.html">matrices as transformations</a>. Play with it for 15 minutes. Try every preset. Type in random matrices.</li>
-      <li>Tomorrow, the Day 1 Fermi lesson will be built. We'll iterate week by week — that way each batch can be informed by what you found easy or hard.</li>
+      <li>Open the <a href="lessons/arithmetic-drill.html">arithmetic drill</a>. Do 30 problems at 2-digit difficulty. Accuracy first.</li>
+      <li>Open <a href="lessons/day-001-fermi.html">Day 1 — Fermi &amp; estimation</a>. Read, play the widget, do the 5 exercises.</li>
+      <li>Click "mark today complete." Tomorrow, return to the <a href="index.html">hub</a> — it'll show Day 2 as next.</li>
     </ol>
 
-    <p class="hint"><strong>Why we build week-by-week instead of all at once:</strong> I don't yet know which topics will be easy for you and which will be sticky. Building one week at a time lets us adjust depth, pace, and emphasis based on your actual signals — which exercises felt too easy, which made you stop and think, which topics need extra reinforcement. Pre-committing to all 180 lessons up front would lock in guesses.</p>
-
-    <p style="margin-top:40px; padding-top: 16px; border-top: 1px solid var(--border);" class="muted center">
-      MIT-licensed. Fork it, use it, share it.
+    <p style="margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);" class="muted center">
+      MIT-licensed · <a href="https://github.com/as04/math-journey">github.com/as04/math-journey</a>
     </p>
   </main>
 </body>

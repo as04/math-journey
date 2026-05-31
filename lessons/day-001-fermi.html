@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Day 1 — Fermi Estimation</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="../assets/lesson.js"></script>
+</head>
+<body>
+  <main class="container">
+
+    <div class="panel">
+      <h3 style="margin-top:0">Why this is Day 1</h3>
+      <p>The single most professionally useful math skill — more than calculus, more than linear algebra — is the ability to <strong>estimate an unknown number to within an order of magnitude</strong>. It's what lets you sanity-check a claim in a meeting, sniff out a bad metric on a dashboard, or judge whether a project is worth the engineering cost. Physicists call this a <em>Fermi estimate</em>, after Enrico Fermi, who could estimate almost anything in his head using a chain of educated guesses.</p>
+      <p>The mental move: <strong>decompose the unknown into multiplied factors you can guess.</strong> Round aggressively. Multiply. Don't be precise — be <em>right within a factor of 10</em>.</p>
+      <div class="hint"><strong>Classic example.</strong> "How many piano tuners in Chicago?" → (population of Chicago) × (fraction owning a piano) × (tunings per piano per year) ÷ (tunings a single tuner does per year). Each factor you can guess. Multiply them. You land around a few hundred. The real number: ~250.</div>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Worked: weight of air in a room</h3>
+      <p>How much does the air in an average bedroom (4m × 5m × 3m) weigh, in kilograms?</p>
+      <ul>
+        <li>Volume: <span class="mono">4 × 5 × 3 = 60 m³</span>.</li>
+        <li>Density of air: ~<span class="mono">1.2 kg/m³</span> (worth memorizing).</li>
+        <li>Weight: <span class="mono">60 × 1.2 ≈ 72 kg</span>.</li>
+      </ul>
+      <p>That's the weight of a grown adult. Most people guess "a few kilos" — off by a factor of 30. <em>Estimation finds the right order of magnitude even when raw intuition betrays you.</em></p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Practice widget</h3>
+      <p>A random Fermi question. Enter your estimate (scientific notation like <span class="mono">2.5e9</span> is fine). It checks if you're within an order of magnitude of the real answer.</p>
+
+      <div class="panel" style="background: var(--bg);">
+        <p class="mono" id="fq" style="font-size: 1.1rem;">Question…</p>
+        <div class="row">
+          <input id="guess" type="text" inputmode="decimal" style="width:200px" placeholder="e.g. 2.5e9" />
+          <button id="check">check</button>
+          <button id="nextq" class="secondary">next question</button>
+        </div>
+        <div id="result" class="mono" style="margin-top:10px; min-height: 1.4em;"></div>
+      </div>
+      <p class="muted" style="margin-top:10px"><em>"Within an order of magnitude" = within a factor of 10 either way.</em></p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Exercises</h3>
+      <div id="exercises"></div>
+    </div>
+
+  </main>
+
+  <script>
+    Lesson.init({ id: 'day-001', day: 1, title: 'Fermi Estimation', estMin: 25 });
+
+    const fermiQuestions = [
+      { q: 'How many heartbeats in an average human lifetime?', ans: 2.5e9 },
+      { q: 'How many cups of coffee are drunk worldwide per day?', ans: 2.5e9 },
+      { q: 'Bytes of plain text in all of English Wikipedia?', ans: 2e10 },
+      { q: 'Seconds you have been alive (if you are 30)?', ans: 9.5e8 },
+      { q: 'Cells in the human body?', ans: 3.7e13 },
+      { q: 'Hairs on the average human head?', ans: 1e5 },
+      { q: 'Trees on Earth?', ans: 3e12 },
+      { q: 'Meters in one light-year?', ans: 9.5e15 },
+    ];
+
+    let currentQ = null;
+    const $ = (id) => document.getElementById(id);
+
+    function loadQ() {
+      currentQ = fermiQuestions[Math.floor(Math.random() * fermiQuestions.length)];
+      $('fq').textContent = currentQ.q;
+      $('guess').value = '';
+      $('result').innerHTML = '';
+    }
+    function check() {
+      const g = parseFloat($('guess').value.trim());
+      if (isNaN(g) || g <= 0) {
+        $('result').innerHTML = '<span class="error">enter a positive number — scientific notation like 2.5e9 works</span>';
+        return;
+      }
+      const ratio = g / currentQ.ans;
+      const within = ratio >= 0.1 && ratio <= 10;
+      const offBy = ratio >= 1 ? ratio.toFixed(1) + '× too high' : (1 / ratio).toFixed(1) + '× too low';
+      const cls = within ? 'score' : 'error';
+      const sym = within ? '✓' : '✗';
+      $('result').innerHTML = `<span class="${cls}">${sym} actual ≈ ${currentQ.ans.toExponential(1)} · your ${g.toExponential(1)} · ${within ? 'within an order of magnitude' : offBy}</span>`;
+    }
+    $('check').addEventListener('click', check);
+    $('nextq').addEventListener('click', loadQ);
+    $('guess').addEventListener('keydown', e => { if (e.key === 'Enter') check(); });
+    loadQ();
+
+    Exercises.render(document.getElementById('exercises'), [
+      {
+        q: "A city has 8M people. 2% are children under 5. How many children under 5?",
+        type: 'numeric',
+        answer: 160000,
+        tol: 100,
+        explain: '8,000,000 × 0.02 = 160,000. "X% of Y" should be a 2-second mental operation by the end of week 1.',
+      },
+      {
+        q: "Estimate: how many smartphones sold worldwide per year? (Within a factor of ~3.)",
+        type: 'range',
+        answer: [4e8, 3e9],
+        explain: 'Roughly 1.2 billion. Decompose: world population × fraction-who-buy × replacement-cycle.',
+      },
+      {
+        q: "Best way to estimate 'How much does a year of human breath weigh?'",
+        type: 'mcq',
+        options: [
+          'Look up weight of one breath, multiply by breaths/min × min/year.',
+          'Guess "a lot" and call it done.',
+          'Use just lung capacity — exhale and inhale cancel.',
+          'Multiply lung capacity by 8 billion (world population).',
+        ],
+        answer: 0,
+        explain: 'Decompose into a product. ~0.5 g/breath × 15 breaths/min × 60 × 24 × 365 ≈ 4 tonnes. About a small car.',
+      },
+      {
+        q: "Fermi estimates go wrong by 100× most often because:",
+        type: 'mcq',
+        options: [
+          'Arithmetic mistakes.',
+          'Using round numbers instead of precise ones.',
+          'A single factor is wildly off — a domain-novel "blind spot" number.',
+          'Forgetting to convert units.',
+        ],
+        answer: 2,
+        explain: 'Errors in the factors you guess wildly wrong dominate. The trick: list each factor out loud so it can be challenged.',
+      },
+      {
+        q: "Quick: 47 × 23 (no calculator). Use cross-multiplication or any mental method.",
+        type: 'numeric',
+        answer: 1081,
+        tol: 0,
+        explain: 'Vedic cross: 7×3=21 (1, carry 2); 4×3 + 7×2 = 26 + 2 = 28 (8, carry 2); 4×2 + 2 = 10. → 1081. This is the Track A muscle that powers fast estimation.',
+      },
+    ]);
+  </script>
+</body>
+</html>

@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Day 5 — Algorithm Complexity</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="../assets/lesson.js"></script>
+</head>
+<body>
+  <main class="container">
+
+    <div class="panel">
+      <h3 style="margin-top:0">Why today, why this matters at Google</h3>
+      <p>Big-O is the language of algorithm interviews. <em>Every</em> Google SWE round will probe your complexity analysis. But it's more than interview kabuki — it's the lens for "will this scale?" which is the question your whole career as a backend engineer turns on.</p>
+      <p>Yesterday you saw exponential vs polynomial vs linear growth as <em>shapes on a graph</em>. Today you map that same picture onto algorithms.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">The definition (informally)</h3>
+      <p><strong>O(f(n))</strong> means: as n grows large, the running time of the algorithm grows <em>no faster than</em> some constant times f(n). We ignore constants. We ignore lower-order terms. Only the asymptotic shape matters.</p>
+      <p>So an algorithm that takes <span class="mono">3n² + 50n + 1000</span> operations is <span class="mono">O(n²)</span>. The 3 doesn't matter; the +50n is dominated; the constant +1000 disappears.</p>
+      <p>This is the <em>upper bound</em> view. There's also Θ (tight bound), Ω (lower bound), and o (strict upper). 95% of the time you say "O" and mean Θ.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Interactive: see the shapes side by side</h3>
+      <p>Move the slider for input size. Watch how each complexity class grows. <strong>Try n = 30 with log-y on</strong>. Notice: O(2ⁿ) leaves the chart almost instantly. O(log n) is essentially flat.</p>
+
+      <canvas id="canvas" width="640" height="400" style="width:100%; max-width:640px; margin: 0 auto;"></canvas>
+
+      <div class="controls" style="margin-top: 12px;">
+        <label>max input size n</label>
+        <input type="range" id="n" min="10" max="200" step="1" value="40" />
+        <span class="val" id="nV">40</span>
+      </div>
+      <div class="row">
+        <label class="mono"><input type="checkbox" id="logy" checked /> log y-axis (recommended)</label>
+      </div>
+
+      <table style="width:100%; margin-top: 14px;">
+        <tr><th>complexity</th><th>steps at n=10</th><th>at n=30</th><th>at n=100</th></tr>
+        <tr><td class="mono">O(1)</td><td class="mono">1</td><td class="mono">1</td><td class="mono">1</td></tr>
+        <tr><td class="mono">O(log n)</td><td class="mono">3</td><td class="mono">5</td><td class="mono">7</td></tr>
+        <tr><td class="mono">O(n)</td><td class="mono">10</td><td class="mono">30</td><td class="mono">100</td></tr>
+        <tr><td class="mono">O(n log n)</td><td class="mono">33</td><td class="mono">147</td><td class="mono">664</td></tr>
+        <tr><td class="mono">O(n²)</td><td class="mono">100</td><td class="mono">900</td><td class="mono">10,000</td></tr>
+        <tr><td class="mono">O(2ⁿ)</td><td class="mono">1,024</td><td class="mono">~10⁹</td><td class="mono">~10³⁰</td></tr>
+        <tr><td class="mono">O(n!)</td><td class="mono">~3.6M</td><td class="mono">~10³²</td><td class="mono">~10¹⁵⁷</td></tr>
+      </table>
+      <p class="hint"><strong>Practical rule:</strong> at the scale of 10⁸ operations per second, you have ~1 sec budget. So O(n²) is fine up to n ≈ 10,000. O(n log n) is fine to n ≈ 10⁷. O(2ⁿ) is dead by n=30. O(n!) is dead by n=10.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">How to read complexity from code (the SWE-interview move)</h3>
+      <ol>
+        <li><strong>One loop over n items?</strong> O(n).</li>
+        <li><strong>Nested loop, both over n?</strong> O(n²).</li>
+        <li><strong>Halving the input each step?</strong> O(log n). (Binary search, balanced trees.)</li>
+        <li><strong>Sorting?</strong> Always at least O(n log n) for comparison-based.</li>
+        <li><strong>Recursion that branches into two subproblems of half-size?</strong> Master theorem says O(n) or O(n log n) depending on per-level work.</li>
+        <li><strong>Recursion that branches into two full-size subproblems?</strong> O(2ⁿ). This is brute-force territory — memoize and you collapse it to O(n) or so.</li>
+      </ol>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Exercises</h3>
+      <div id="exercises"></div>
+    </div>
+
+  </main>
+
+  <script>
+    Lesson.init({ id: 'day-005', day: 5, title: 'Algorithm Complexity', estMin: 30 });
+
+    const $ = id => document.getElementById(id);
+    const canvas = $('canvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const PAD = 50;
+
+    const fns = {
+      'O(1)':     { f: () => 1, color: '#888' },
+      'O(log n)': { f: n => Math.log2(Math.max(n, 1)), color: '#6ee7a3' },
+      'O(n)':     { f: n => n, color: '#7cc4ff' },
+      'O(n log n)': { f: n => n * Math.log2(Math.max(n, 1)), color: '#c47cff' },
+      'O(n²)':    { f: n => n * n, color: '#ffb86b' },
+      'O(2ⁿ)':    { f: n => Math.pow(2, n), color: '#ff7a7a' },
+    };
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      const N = parseInt($('n').value, 10);
+      const useLog = $('logy').checked;
+      $('nV').textContent = N;
+
+      let maxVal = 0;
+      for (const { f } of Object.values(fns)) {
+        for (let i = 1; i <= N; i++) maxVal = Math.max(maxVal, f(i));
+      }
+      const yMax = useLog ? Math.log10(maxVal + 1) : maxVal;
+
+      const xToScreen = i => PAD + ((i - 1) / (N - 1 || 1)) * (W - PAD - 16);
+      const yToScreen = v => {
+        const ly = useLog ? Math.log10(Math.max(v, 1)) : v;
+        return H - PAD - (ly / (yMax || 1)) * (H - PAD - 16);
+      };
+
+      // grid
+      ctx.strokeStyle = '#2a2f3a';
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= 8; i++) {
+        const y = PAD + (i / 8) * (H - PAD - 16);
+        ctx.beginPath(); ctx.moveTo(PAD, y); ctx.lineTo(W - 16, y); ctx.stroke();
+      }
+      // axes
+      ctx.strokeStyle = '#9aa0aa';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(PAD, 16); ctx.lineTo(PAD, H - PAD); ctx.lineTo(W - 16, H - PAD);
+      ctx.stroke();
+
+      // labels
+      ctx.fillStyle = '#9aa0aa';
+      ctx.font = '11px monospace';
+      ctx.fillText('n →', W - 30, H - PAD + 18);
+      ctx.save();
+      ctx.translate(16, H / 2 + 30);
+      ctx.rotate(-Math.PI / 2);
+      ctx.fillText(useLog ? 'steps (log scale)' : 'steps', 0, 0);
+      ctx.restore();
+
+      // each function
+      let li = 16;
+      for (const [name, { f, color }] of Object.entries(fns)) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let i = 1; i <= N; i++) {
+          const x = xToScreen(i);
+          const y = yToScreen(f(i));
+          if (i === 1) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        // legend
+        ctx.fillStyle = color;
+        ctx.font = '600 11px monospace';
+        ctx.fillText(name, W - 110, li);
+        li += 14;
+      }
+    }
+    ['n', 'logy'].forEach(id => $(id).addEventListener('input', draw));
+    draw();
+
+    Exercises.render($('exercises'), [
+      {
+        q: "What is the complexity of this code?<br><pre class='mono' style='background:var(--panel-2);padding:8px;border-radius:6px;'>for i in range(n):\n    for j in range(n):\n        print(i, j)</pre>",
+        type: 'mcq',
+        options: ['O(n)', 'O(n log n)', 'O(n²)', 'O(2ⁿ)'],
+        answer: 2,
+        explain: 'Two nested loops, each running n times. Total iterations = n · n = n². The classic O(n²).',
+      },
+      {
+        q: "What is the complexity of binary search on a sorted array of n elements?",
+        type: 'mcq',
+        options: ['O(1)', 'O(log n)', 'O(n)', 'O(n log n)'],
+        answer: 1,
+        explain: 'Each step halves the search space. log₂(n) steps to reach a single element. This is why sorted data + binary search is one of the great wins in CS.',
+      },
+      {
+        q: "An algorithm runs in 3n² + 100n + 5000 operations. What's its complexity?",
+        type: 'mcq',
+        options: ['O(n)', 'O(n²)', 'O(3n²)', 'O(n² + n + 1)'],
+        answer: 1,
+        explain: 'Big-O drops constants and lower-order terms. The n² dominates as n grows. We say O(n²).',
+      },
+      {
+        q: "Fastest practical sorting algorithm (general purpose) has complexity:",
+        type: 'mcq',
+        options: ['O(n)', 'O(n log n)', 'O(n²)', 'O(log n)'],
+        answer: 1,
+        explain: 'Comparison sorts have a lower bound of Θ(n log n). Mergesort, heapsort, and (avg-case) quicksort hit this bound. Sub-O(n log n) is possible only with extra assumptions like radix sort.',
+      },
+      {
+        q: "How many operations does an O(n²) algorithm take at n = 1000?",
+        type: 'numeric', answer: 1000000, tol: 0,
+        explain: '1000² = 1,000,000. Fits well within a second at 10⁸ ops/sec. n² is fine up to about 10,000.',
+      },
+    ]);
+  </script>
+</body>
+</html>

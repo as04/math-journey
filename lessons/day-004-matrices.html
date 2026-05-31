@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Day 4 — Matrices as Transformations</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="../assets/lesson.js"></script>
+</head>
+<body>
+  <main class="container">
+
+    <div class="panel">
+      <h3 style="margin-top:0">The mental model to lock in today</h3>
+      <p>A matrix is <strong>a function that transforms space</strong>. It takes vectors to vectors. Linearly. Nothing more, nothing less.</p>
+      <ul>
+        <li>The columns of M tell you where the basis vectors î = (1,0) and ĵ = (0,1) <em>land</em> after the transformation. Everything else is determined by linearity.</li>
+        <li><strong>det(M)</strong> = signed area-scaling factor. Negative = orientation flipped. Zero = collapses space onto a line.</li>
+        <li><strong>Eigenvectors</strong> = directions that the transformation only stretches, doesn't rotate. <strong>Eigenvalues</strong> = the stretch factors.</li>
+        <li>Matrix multiplication = composition of transformations.</li>
+      </ul>
+    </div>
+
+    <div class="panel center">
+      <h3 style="margin-top:0">Today's widget</h3>
+      <p>The interactive visualizer is a full-screen lesson of its own. Open it, play for at least 10 minutes — try every preset, type in your own matrices, watch what happens. Then come back here for the exercises.</p>
+      <p><a href="linear-algebra-transformations.html"><button>Open the matrix transformation visualizer →</button></a></p>
+      <p class="muted">It will open in this same window — use your browser's Back button to return.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Things to try in the visualizer</h3>
+      <ol>
+        <li><strong>Diagonal matrix [[2,0],[0,3]]</strong>: stretches î by 2, ĵ by 3. Determinant 6. Both basis vectors are eigenvectors.</li>
+        <li><strong>Shear [[1,1],[0,1]]</strong>: pushes the top of the unit square sideways. Determinant still 1 (area preserved). Eigenvalues both 1 — only the x-axis is an eigen-direction.</li>
+        <li><strong>Rotation</strong>: complex eigenvalues — there's NO real direction that a rotation leaves alone.</li>
+        <li><strong>[[1,2],[2,4]]</strong>: determinant 0 — space collapses onto a line. This is a singular (non-invertible) matrix.</li>
+        <li><strong>Negative determinant</strong>: try [[1,0],[0,-1]] — reflects across the x-axis. The shaded unit square flips orientation.</li>
+      </ol>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Why this matters for ML</h3>
+      <p>Every neural network layer is (mostly) a matrix multiplication. Every feature transformation in classical ML is a matrix. PCA finds eigenvectors of the covariance matrix. SVD is the most-used decomposition in numerical ML. <strong>Singular (det=0) matrices break things</strong> — that's why "condition number" matters in practice. None of this lands properly unless the geometric picture is in your head first.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Exercises</h3>
+      <div id="exercises"></div>
+    </div>
+
+  </main>
+
+  <script>
+    Lesson.init({ id: 'day-004', day: 4, title: 'Matrices as Transformations', estMin: 30 });
+
+    Exercises.render(document.getElementById('exercises'), [
+      {
+        q: "Determinant of [[2, 0], [0, 3]]?",
+        type: 'numeric', answer: 6, tol: 0,
+        explain: '2·3 − 0·0 = 6. A diagonal matrix scales î by 2 and ĵ by 3, so area scales by 2×3 = 6.',
+      },
+      {
+        q: "Determinant of [[1, 2], [3, 6]]?",
+        type: 'numeric', answer: 0, tol: 0,
+        explain: '1·6 − 2·3 = 0. The rows (and columns) are linearly dependent — second is 2× first. Space collapses onto a line.',
+      },
+      {
+        q: "After applying [[2, 0], [0, 2]] to the vector (1, 1), what's the first component of the result?",
+        type: 'numeric', answer: 2, tol: 0,
+        explain: 'M·v = (2·1 + 0·1, 0·1 + 2·1) = (2, 2). The matrix scales everything by 2.',
+      },
+      {
+        q: "Which matrix rotates the plane by 90° counter-clockwise?",
+        type: 'mcq',
+        options: [
+          '[[1, 0], [0, 1]]',
+          '[[0, -1], [1, 0]]',
+          '[[0, 1], [-1, 0]]',
+          '[[-1, 0], [0, -1]]',
+        ],
+        answer: 1,
+        explain: 'Rotation by 90° CCW sends î=(1,0) to (0,1) and ĵ=(0,1) to (−1,0). Columns of M are where î and ĵ land: [[0,−1],[1,0]].',
+      },
+      {
+        q: "Eigenvalues of the diagonal matrix [[3, 0], [0, 5]]?",
+        type: 'mcq',
+        options: ['1 and 1', '3 and 5', '8 and 15', '0 and 15'],
+        answer: 1,
+        explain: 'For a diagonal matrix, the diagonal entries ARE the eigenvalues. î stretches by 3, ĵ stretches by 5. Both basis vectors are eigenvectors.',
+      },
+    ]);
+  </script>
+</body>
+</html>

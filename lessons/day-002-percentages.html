@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Day 2 — Percentages, Growth, into Big-O</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="../assets/lesson.js"></script>
+</head>
+<body>
+  <main class="container">
+
+    <div class="panel">
+      <h3 style="margin-top:0">Why this matters at work and at Google</h3>
+      <p>Every dashboard you read, every metric you ship, every "growth is X%" claim — it's percentages and growth rates. <em>And</em> the same math (exponential vs polynomial growth) is the intuition behind Big-O. So one lesson, two payoffs: become fast and right with percentages, then see how the same shapes power algorithm-complexity thinking.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">The four percentage traps</h3>
+      <p><strong>1. "% of" vs "% change."</strong> 50% of 200 is 100. But going from 200 → 100 is a −50% change, while going from 100 → 200 is a +100% change. The base matters.</p>
+      <p><strong>2. Percentage points vs percent.</strong> Going from 5% to 7% is "2 percentage points" — but it's a <em>40% increase</em>. Confusing these in a deck will get you publicly corrected.</p>
+      <p><strong>3. Reversibility.</strong> A 50% loss is not undone by a 50% gain. (Down 100 → 50, then up 50% → 75.) You need a 100% gain to recover.</p>
+      <p><strong>4. Compound vs simple growth.</strong> 10% per month for a year is <em>not</em> 120% growth — it's about 213% (since <span class="mono">1.1¹² ≈ 3.14</span>).</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">The Rule of 72</h3>
+      <p><strong>Doubling time ≈ 72 / growth-rate-%.</strong> Memorize this.</p>
+      <ul>
+        <li>Active users growing 6% per month? Doubles in <span class="mono">72/6 = 12 months</span>.</li>
+        <li>Inflation at 3% a year? Prices double in <span class="mono">72/3 = 24 years</span>.</li>
+        <li>Investment at 9% a year? Doubles in <span class="mono">72/9 = 8 years</span>.</li>
+      </ul>
+      <p>This is just <span class="mono">ln(2) ≈ 0.69</span> in disguise. The "72" makes the division clean.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Interactive: growth curves and the Big-O bridge</h3>
+      <p>Move the sliders. See three things side by side: linear growth, polynomial growth (x²), and exponential growth (1.x)ⁿ. Toggle "log y-axis" — and watch what makes algorithm complexity readable.</p>
+
+      <canvas id="canvas" width="640" height="380" style="width:100%; max-width:640px; margin: 0 auto;"></canvas>
+
+      <div class="controls" style="margin-top: 12px;">
+        <label>monthly growth rate %</label>
+        <input type="range" id="rate" min="1" max="30" step="0.5" value="8" />
+        <span class="val" id="rateV">8.0%</span>
+
+        <label>time horizon (months)</label>
+        <input type="range" id="horizon" min="6" max="60" step="1" value="24" />
+        <span class="val" id="horizonV">24</span>
+      </div>
+
+      <div class="row" style="margin-top: 12px;">
+        <label class="mono"><input type="checkbox" id="logy" /> log y-axis</label>
+        <span class="muted mono">doubling time: <span id="dt">9.0</span> months</span>
+        <span class="muted mono">final value (exponential): <span id="finv">6.34</span>×</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Bridge to Big-O</h3>
+      <p>That exponential curve you just watched? It's why <span class="mono">O(2ⁿ)</span> algorithms are infamous. At n = 30, an O(2ⁿ) algorithm takes ~1 billion steps. At n = 60, ~1 quintillion. The shape that compounds your savings account also makes brute-force recursion useless on large inputs.</p>
+      <p>Conversely, <span class="mono">O(log n)</span> is the <em>opposite</em> shape — slow growth no matter how big n gets. Binary search a billion items? ~30 steps.</p>
+      <p>Order of growth, from best to worst (memorize the ordering):</p>
+      <p class="mono center" style="font-size: 1.05rem;">O(1) &lt; O(log n) &lt; O(n) &lt; O(n log n) &lt; O(n²) &lt; O(n³) &lt; O(2ⁿ) &lt; O(n!)</p>
+      <p class="muted">Day 5 goes deep on this. Today, just know: percentages-and-growth math is the same math as algorithm-complexity math. Different units, same shapes.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Exercises</h3>
+      <div id="exercises"></div>
+    </div>
+
+  </main>
+
+  <script>
+    Lesson.init({ id: 'day-002', day: 2, title: 'Percentages, Growth, into Big-O', estMin: 30 });
+
+    const $ = id => document.getElementById(id);
+    const canvas = $('canvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const PAD = 38;
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      const r = parseFloat($('rate').value) / 100;
+      const N = parseInt($('horizon').value, 10);
+      const useLog = $('logy').checked;
+
+      const series = {
+        linear:      i => 1 + r * i,
+        polynomial:  i => 1 + (i / 10) ** 2,
+        exponential: i => Math.pow(1 + r, i),
+      };
+      let maxVal = 0;
+      for (let i = 0; i <= N; i++) {
+        for (const s of Object.values(series)) maxVal = Math.max(maxVal, s(i));
+      }
+      const yMax = useLog ? Math.log10(maxVal) : maxVal;
+      const yMin = useLog ? 0 : 0;
+
+      const xToScreen = i => PAD + (i / N) * (W - 2 * PAD);
+      const yToScreen = v => {
+        const ly = useLog ? Math.log10(Math.max(v, 1)) : v;
+        return H - PAD - ((ly - yMin) / (yMax - yMin || 1)) * (H - 2 * PAD);
+      };
+
+      // grid
+      ctx.strokeStyle = '#2a2f3a';
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= 10; i++) {
+        const y = PAD + (i / 10) * (H - 2 * PAD);
+        ctx.beginPath();
+        ctx.moveTo(PAD, y);
+        ctx.lineTo(W - PAD, y);
+        ctx.stroke();
+      }
+      // axes
+      ctx.strokeStyle = '#9aa0aa';
+      ctx.beginPath();
+      ctx.moveTo(PAD, PAD);
+      ctx.lineTo(PAD, H - PAD);
+      ctx.lineTo(W - PAD, H - PAD);
+      ctx.stroke();
+
+      // series
+      const colors = { linear: '#6ee7a3', polynomial: '#7cc4ff', exponential: '#ff7a7a' };
+      for (const [name, fn] of Object.entries(series)) {
+        ctx.strokeStyle = colors[name];
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        for (let i = 0; i <= N; i++) {
+          const x = xToScreen(i);
+          const y = yToScreen(fn(i));
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+
+      // legend
+      ctx.font = '12px monospace';
+      let lx = W - 180, ly = 16;
+      ctx.fillStyle = colors.linear;       ctx.fillText('— linear: 1 + rt', lx, ly);
+      ctx.fillStyle = colors.polynomial;   ctx.fillText('— polynomial: 1 + (t/10)²', lx, ly + 16);
+      ctx.fillStyle = colors.exponential;  ctx.fillText('— exponential: (1+r)ᵗ', lx, ly + 32);
+
+      // axis labels
+      ctx.fillStyle = '#9aa0aa';
+      ctx.font = '11px monospace';
+      ctx.fillText('t (months)', W / 2 - 30, H - 8);
+      ctx.save();
+      ctx.translate(12, H / 2 + 30);
+      ctx.rotate(-Math.PI / 2);
+      ctx.fillText(useLog ? 'value (log scale)' : 'value (× initial)', 0, 0);
+      ctx.restore();
+    }
+
+    function update() {
+      const r = parseFloat($('rate').value);
+      const N = parseInt($('horizon').value, 10);
+      $('rateV').textContent = r.toFixed(1) + '%';
+      $('horizonV').textContent = N;
+      $('dt').textContent = (72 / r).toFixed(1);
+      $('finv').textContent = Math.pow(1 + r / 100, N).toFixed(2);
+      draw();
+    }
+    ['rate', 'horizon', 'logy'].forEach(id => $(id).addEventListener('input', update));
+    update();
+
+    Exercises.render($('exercises'), [
+      {
+        q: "Active users went 100 → 130. What % change?",
+        type: 'numeric', answer: 30, tol: 0.5,
+        explain: '(130 − 100) / 100 × 100 = 30%. Always: (new − old) / old.',
+      },
+      {
+        q: "Active users went 130 → 100. What % change?",
+        type: 'numeric', answer: -23.08, tol: 0.5,
+        explain: '(100 − 130) / 130 × 100 ≈ −23.08%. NOT −30% — the base changed. This trap appears constantly in real analytics.',
+      },
+      {
+        q: "Revenue grows 8% per month for 12 months. Total growth? (Give as a percentage, e.g. 151 means 151%.)",
+        type: 'numeric', answer: 151.8, tol: 1,
+        explain: '1.08¹² ≈ 2.518, so growth is ≈ 151.8% (you ended at ~252% of start).',
+      },
+      {
+        q: "Using Rule of 72: at 6% monthly growth, how many months to double?",
+        type: 'numeric', answer: 12, tol: 0.5,
+        explain: '72 / 6 = 12. Memorize this rule — it makes back-of-napkin growth math instant.',
+      },
+      {
+        q: "Order these from BEST (fastest) to WORST asymptotically: O(n²), O(n log n), O(2ⁿ), O(log n).",
+        type: 'mcq',
+        options: [
+          'O(log n), O(n log n), O(n²), O(2ⁿ)',
+          'O(log n), O(n²), O(n log n), O(2ⁿ)',
+          'O(n²), O(n log n), O(log n), O(2ⁿ)',
+          'O(2ⁿ), O(n²), O(n log n), O(log n)',
+        ],
+        answer: 0,
+        explain: 'For large n: log n < n log n < n² < 2ⁿ. The full canonical ordering is: 1 < log n < √n < n < n log n < n² < n³ < 2ⁿ < n!. Day 5 goes deep.',
+      },
+    ]);
+  </script>
+</body>
+</html>

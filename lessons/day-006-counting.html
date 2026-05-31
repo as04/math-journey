@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Day 6 — Counting &amp; Sample Spaces</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="../assets/lesson.js"></script>
+</head>
+<body>
+  <main class="container">
+
+    <div class="panel">
+      <h3 style="margin-top:0">Why "counting" is the start of probability</h3>
+      <p>Most "I don't get probability" really means "I can't count the outcomes correctly." Probability for discrete events is just <strong>(favorable outcomes) / (total outcomes)</strong> — but counting either correctly is the actual hard skill. Today: nail the counting.</p>
+      <p>Used everywhere: A/B test design, system reliability calculations, password strength, hashing collisions, ML class-imbalance reasoning, and 80% of brain-teaser interview questions.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">The three rules of counting</h3>
+      <p><strong>1. Multiplication rule.</strong> If choice A has <span class="mono">m</span> options and choice B has <span class="mono">n</span> options (independent), there are <span class="mono">m × n</span> total outcomes. PIN with 4 digits: 10⁴ = 10,000 possibilities.</p>
+      <p><strong>2. Permutations.</strong> Arranging <span class="mono">k</span> distinct items in order out of <span class="mono">n</span>: <span class="mono">P(n, k) = n! / (n−k)!</span>. <em>Order matters.</em></p>
+      <p><strong>3. Combinations.</strong> Choosing <span class="mono">k</span> items out of <span class="mono">n</span>, order doesn't matter: <span class="mono">C(n, k) = n! / (k! · (n−k)!) = "n choose k"</span>. <em>Order doesn't matter.</em></p>
+      <div class="hint">
+        <strong>Permutation vs combination — the test:</strong> would (Alice, Bob) and (Bob, Alice) count as different outcomes? If yes → permutation. If no → combination.
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Sample spaces and events</h3>
+      <p>A <strong>sample space S</strong> is the set of all possible outcomes. An <strong>event A</strong> is a subset of S.</p>
+      <p>For a single fair die: <span class="mono">S = {1,2,3,4,5,6}</span>. Event "rolled an even number": <span class="mono">A = {2,4,6}</span>. Probability: <span class="mono">|A| / |S| = 3/6 = 1/2</span>.</p>
+      <p>For two dice: <span class="mono">S</span> has <span class="mono">36</span> outcomes (each die independent). Event "sum is 7" has <span class="mono">6</span> outcomes — (1,6), (2,5), (3,4), (4,3), (5,2), (6,1). Probability <span class="mono">6/36 = 1/6</span>.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Interactive: simulate vs theory</h3>
+      <p>Pick a scenario. Run many trials. Watch the observed frequency converge to the theoretical probability (this is the Law of Large Numbers, the foundation of all statistical reasoning).</p>
+
+      <div class="row">
+        <label class="mono">scenario</label>
+        <select id="scenario">
+          <option value="coin">single coin: P(heads)</option>
+          <option value="2coins">2 coins: P(both heads)</option>
+          <option value="die">die: P(roll is 6)</option>
+          <option value="dice_sum_7">2 dice: P(sum = 7)</option>
+          <option value="birthday23">23 people: P(some pair shares a birthday)</option>
+        </select>
+        <button id="run">run 1000 trials</button>
+        <button id="run10k" class="secondary">+10,000 more</button>
+        <button id="reset" class="secondary">reset</button>
+      </div>
+
+      <table style="width:100%; margin-top: 14px;">
+        <tr><th>quantity</th><th>value</th></tr>
+        <tr><td>trials run</td><td class="mono" id="ntrials">0</td></tr>
+        <tr><td>successes</td><td class="mono" id="nsucc">0</td></tr>
+        <tr><td>observed frequency</td><td class="mono" id="obsfreq">—</td></tr>
+        <tr><td>theoretical probability</td><td class="mono" id="theory">—</td></tr>
+      </table>
+
+      <canvas id="canvas" width="640" height="220" style="width:100%; max-width:640px; margin: 12px auto 0;"></canvas>
+      <p class="muted">The chart shows the observed frequency converging toward the theoretical line as more trials run.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Exercises</h3>
+      <div id="exercises"></div>
+    </div>
+
+  </main>
+
+  <script>
+    Lesson.init({ id: 'day-006', day: 6, title: 'Counting & Sample Spaces', estMin: 30 });
+
+    const $ = id => document.getElementById(id);
+    const scenarios = {
+      coin:      { trial: () => Math.random() < 0.5 ? 1 : 0, theory: 0.5 },
+      '2coins':  { trial: () => (Math.random() < 0.5 && Math.random() < 0.5) ? 1 : 0, theory: 0.25 },
+      die:       { trial: () => (Math.floor(Math.random() * 6) + 1 === 6) ? 1 : 0, theory: 1/6 },
+      dice_sum_7:{ trial: () => {
+                     const a = Math.floor(Math.random() * 6) + 1;
+                     const b = Math.floor(Math.random() * 6) + 1;
+                     return (a + b === 7) ? 1 : 0;
+                   }, theory: 6/36 },
+      birthday23:{ trial: () => {
+                     const bs = new Set();
+                     for (let i = 0; i < 23; i++) {
+                       const b = Math.floor(Math.random() * 365);
+                       if (bs.has(b)) return 1;
+                       bs.add(b);
+                     }
+                     return 0;
+                   }, theory: 1 - (() => { let p = 1; for (let i = 0; i < 23; i++) p *= (365 - i) / 365; return p; })() },
+    };
+
+    let history = [];
+    let trials = 0, succ = 0;
+
+    function setScenario() {
+      trials = 0; succ = 0; history = [];
+      update();
+    }
+
+    function runTrials(n) {
+      const s = scenarios[$('scenario').value];
+      for (let i = 0; i < n; i++) {
+        trials++;
+        if (s.trial()) succ++;
+        if (trials % Math.max(1, Math.floor(n / 200)) === 0)
+          history.push({ t: trials, f: succ / trials });
+      }
+      update();
+    }
+
+    function update() {
+      const s = scenarios[$('scenario').value];
+      $('ntrials').textContent = trials;
+      $('nsucc').textContent = succ;
+      $('obsfreq').textContent = trials ? (succ / trials).toFixed(4) : '—';
+      $('theory').textContent = s.theory.toFixed(4);
+      drawConvergence(s.theory);
+    }
+
+    const canvas = $('canvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+
+    function drawConvergence(theory) {
+      ctx.clearRect(0, 0, W, H);
+      const PAD = 30;
+      const yMid = H / 2;
+      // theory line at y = theory, plot in [0,1]
+      ctx.strokeStyle = '#2a2f3a';
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= 4; i++) {
+        const y = PAD + (i / 4) * (H - 2 * PAD);
+        ctx.beginPath(); ctx.moveTo(PAD, y); ctx.lineTo(W - 16, y); ctx.stroke();
+      }
+      // theory line
+      const yTheory = H - PAD - theory * (H - 2 * PAD);
+      ctx.strokeStyle = '#ffb86b';
+      ctx.setLineDash([6, 6]);
+      ctx.beginPath();
+      ctx.moveTo(PAD, yTheory); ctx.lineTo(W - 16, yTheory);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#ffb86b';
+      ctx.font = '11px monospace';
+      ctx.fillText(`theory = ${theory.toFixed(3)}`, W - 130, yTheory - 6);
+      // history
+      if (history.length > 1) {
+        ctx.strokeStyle = '#7cc4ff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let i = 0; i < history.length; i++) {
+          const x = PAD + (i / (history.length - 1)) * (W - PAD - 16);
+          const y = H - PAD - history[i].f * (H - 2 * PAD);
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+      ctx.fillStyle = '#9aa0aa';
+      ctx.font = '11px monospace';
+      ctx.fillText('0', 10, H - PAD + 4);
+      ctx.fillText('1', 10, PAD + 4);
+      ctx.fillText('trials →', W / 2 - 24, H - 8);
+    }
+
+    $('run').addEventListener('click', () => runTrials(1000));
+    $('run10k').addEventListener('click', () => runTrials(10000));
+    $('reset').addEventListener('click', setScenario);
+    $('scenario').addEventListener('change', setScenario);
+    setScenario();
+
+    Exercises.render($('exercises'), [
+      {
+        q: "How many 4-digit PINs are possible (digits 0–9, with repetition allowed)?",
+        type: 'numeric', answer: 10000, tol: 0,
+        explain: '10 × 10 × 10 × 10 = 10⁴ = 10,000. Multiplication rule with independent choices.',
+      },
+      {
+        q: "How many ways to arrange 5 distinct books on a shelf?",
+        type: 'numeric', answer: 120, tol: 0,
+        explain: '5! = 5 × 4 × 3 × 2 × 1 = 120. The first slot has 5 choices, the next 4, and so on.',
+      },
+      {
+        q: "How many ways to choose 3 people from a group of 10 (for a committee — order does NOT matter)?",
+        type: 'numeric', answer: 120, tol: 0,
+        explain: 'C(10, 3) = 10! / (3! · 7!) = (10·9·8) / (3·2·1) = 720/6 = 120. Combinations: order ignored.',
+      },
+      {
+        q: "P(rolling two dice and getting sum = 7)?",
+        type: 'numeric', answer: 0.1667, tol: 0.001,
+        explain: '6 favorable outcomes (1+6, 2+5, 3+4, 4+3, 5+2, 6+1) out of 36 total = 1/6 ≈ 0.167. Sum=7 has the most outcomes — that\'s why it\'s the dice "average."',
+      },
+      {
+        q: "In a room of 23 people, the probability that some pair shares a birthday is closest to:",
+        type: 'mcq',
+        options: ['~6%', '~50%', '~75%', '~95%'],
+        answer: 1,
+        explain: '~50.7%. The "birthday paradox." Counter-intuitive — most people guess much lower. P(no shared birthdays) = 365/365 · 364/365 · ... · 343/365 ≈ 0.493. So P(shared) ≈ 0.507. The widget above lets you watch this converge.',
+      },
+    ]);
+  </script>
+</body>
+</html>

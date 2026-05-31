@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Day 3 — Vectors as Arrows</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="../assets/lesson.js"></script>
+</head>
+<body>
+  <main class="container">
+
+    <div class="panel">
+      <h3 style="margin-top:0">Why this is foundational for ML</h3>
+      <p>Every data point in ML is a vector. Every neuron's input is a vector. Every embedding (word, image, user, song) is a vector. The arithmetic of vectors — addition, scalar multiplication, dot product — is the primitive that everything else is built on. Get the geometric mental model now and the rest of ML math falls into place.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">The mental model</h3>
+      <ul>
+        <li>A <strong>vector</strong> is an arrow from the origin to a point.</li>
+        <li>Its <strong>magnitude</strong> is its length. For <span class="mono">v = (a, b)</span>: <span class="mono">|v| = √(a² + b²)</span>. (Pythagoras.)</li>
+        <li><strong>Addition</strong>: place arrows tip-to-tail. Geometrically: the resultant from the first origin to the last tip.</li>
+        <li><strong>Scalar multiplication</strong>: stretch the arrow by that factor (negative flips it).</li>
+        <li><strong>Dot product</strong>: <span class="mono">u · v = u₁v₁ + u₂v₂ = |u||v| cos θ</span>. The "amount of u that's pointing along v" — a similarity measure.</li>
+      </ul>
+      <div class="hint">
+        <strong>The dot product is the most important formula in ML you don't yet appreciate.</strong> Cosine similarity is just normalized dot product. Attention is dot products of query and key. Word embedding similarity is dot product. Linear regression prediction is dot product of features and weights. Internalize it now.
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Interactive: drag the arrows</h3>
+      <p>Drag the tip of either arrow. Watch the dot product, angle, and magnitudes update live. Notice: dot product is positive when vectors point similar directions, zero when perpendicular, negative when opposing.</p>
+
+      <canvas id="canvas" width="500" height="500" style="width:100%; max-width:500px; margin: 0 auto; cursor: grab;"></canvas>
+
+      <table style="width:100%; max-width: 500px; margin: 12px auto 0;">
+        <tr><th>quantity</th><th>value</th></tr>
+        <tr><td class="mono">u (blue)</td><td class="mono" id="uval">(3, 1)</td></tr>
+        <tr><td class="mono">v (red)</td><td class="mono" id="vval">(1, 2)</td></tr>
+        <tr><td class="mono">|u|</td><td class="mono" id="umag">3.16</td></tr>
+        <tr><td class="mono">|v|</td><td class="mono" id="vmag">2.24</td></tr>
+        <tr><td class="mono">u · v</td><td class="mono" id="dot">5</td></tr>
+        <tr><td class="mono">angle θ</td><td class="mono" id="angle">45°</td></tr>
+        <tr><td class="mono">cos θ (similarity)</td><td class="mono" id="cos">0.707</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Exercises</h3>
+      <div id="exercises"></div>
+    </div>
+
+  </main>
+
+  <script>
+    Lesson.init({ id: 'day-003', day: 3, title: 'Vectors as Arrows', estMin: 30 });
+
+    const $ = id => document.getElementById(id);
+    const canvas = $('canvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const SCALE = 50;
+    const cx = W / 2, cy = H / 2;
+
+    let u = { x: 3, y: 1 };
+    let v = { x: 1, y: 2 };
+    let drag = null;
+
+    const toScreen = (x, y) => [cx + x * SCALE, cy - y * SCALE];
+    const fromScreen = (sx, sy) => [(sx - cx) / SCALE, -(sy - cy) / SCALE];
+
+    function drawGrid() {
+      ctx.clearRect(0, 0, W, H);
+      ctx.strokeStyle = '#2a2f3a';
+      ctx.lineWidth = 1;
+      for (let i = -5; i <= 5; i++) {
+        ctx.beginPath();
+        const [x1, y1] = toScreen(i, -5);
+        const [x2, y2] = toScreen(i, 5);
+        ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+        ctx.stroke();
+        ctx.beginPath();
+        const [x3, y3] = toScreen(-5, i);
+        const [x4, y4] = toScreen(5, i);
+        ctx.moveTo(x3, y3); ctx.lineTo(x4, y4);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = '#9aa0aa';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(0, cy); ctx.lineTo(W, cy);
+      ctx.moveTo(cx, 0); ctx.lineTo(cx, H);
+      ctx.stroke();
+    }
+
+    function drawArrow(vec, color, label) {
+      const [sx1, sy1] = toScreen(0, 0);
+      const [sx2, sy2] = toScreen(vec.x, vec.y);
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(sx1, sy1);
+      ctx.lineTo(sx2, sy2);
+      ctx.stroke();
+      const ang = Math.atan2(sy2 - sy1, sx2 - sx1);
+      const ah = 12;
+      ctx.beginPath();
+      ctx.moveTo(sx2, sy2);
+      ctx.lineTo(sx2 - ah * Math.cos(ang - 0.4), sy2 - ah * Math.sin(ang - 0.4));
+      ctx.lineTo(sx2 - ah * Math.cos(ang + 0.4), sy2 - ah * Math.sin(ang + 0.4));
+      ctx.closePath();
+      ctx.fill();
+      // tip handle
+      ctx.beginPath();
+      ctx.arc(sx2, sy2, 7, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+      // label
+      ctx.font = '700 14px monospace';
+      ctx.fillText(label, sx2 + 12, sy2 - 10);
+    }
+
+    function dotProduct(a, b) { return a.x * b.x + a.y * b.y; }
+    function magnitude(a) { return Math.hypot(a.x, a.y); }
+    function angleBetween(a, b) {
+      const c = dotProduct(a, b) / (magnitude(a) * magnitude(b) || 1);
+      return Math.acos(Math.max(-1, Math.min(1, c)));
+    }
+
+    function drawProjection() {
+      // project u onto v: scalar = (u·v) / |v|², then projection = scalar * v
+      const dotuv = dotProduct(u, v);
+      const vm2 = v.x * v.x + v.y * v.y;
+      if (vm2 < 0.01) return;
+      const s = dotuv / vm2;
+      const proj = { x: s * v.x, y: s * v.y };
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = '#ffb86b';
+      ctx.lineWidth = 1.5;
+      const [px1, py1] = toScreen(u.x, u.y);
+      const [px2, py2] = toScreen(proj.x, proj.y);
+      ctx.beginPath();
+      ctx.moveTo(px1, py1); ctx.lineTo(px2, py2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // projection arrow itself
+      ctx.strokeStyle = '#ffb86b';
+      ctx.lineWidth = 4;
+      const [ox, oy] = toScreen(0, 0);
+      ctx.beginPath();
+      ctx.moveTo(ox, oy); ctx.lineTo(px2, py2);
+      ctx.stroke();
+    }
+
+    function draw() {
+      drawGrid();
+      drawProjection();
+      drawArrow(v, '#ff7a7a', 'v');
+      drawArrow(u, '#7cc4ff', 'u');
+
+      // numbers
+      $('uval').textContent = `(${u.x.toFixed(1)}, ${u.y.toFixed(1)})`;
+      $('vval').textContent = `(${v.x.toFixed(1)}, ${v.y.toFixed(1)})`;
+      $('umag').textContent = magnitude(u).toFixed(2);
+      $('vmag').textContent = magnitude(v).toFixed(2);
+      const d = dotProduct(u, v);
+      $('dot').textContent = d.toFixed(2);
+      const theta = angleBetween(u, v) * 180 / Math.PI;
+      $('angle').textContent = theta.toFixed(1) + '°';
+      $('cos').textContent = (Math.cos(angleBetween(u, v))).toFixed(3);
+    }
+
+    canvas.addEventListener('mousedown', e => {
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) * (W / rect.width);
+      const y = (e.clientY - rect.top) * (H / rect.height);
+      const [utx, uty] = toScreen(u.x, u.y);
+      const [vtx, vty] = toScreen(v.x, v.y);
+      if (Math.hypot(x - utx, y - uty) < 15) drag = 'u';
+      else if (Math.hypot(x - vtx, y - vty) < 15) drag = 'v';
+    });
+    canvas.addEventListener('mousemove', e => {
+      if (!drag) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) * (W / rect.width);
+      const y = (e.clientY - rect.top) * (H / rect.height);
+      const [mx, my] = fromScreen(x, y);
+      const target = drag === 'u' ? u : v;
+      target.x = Math.round(mx * 10) / 10;
+      target.y = Math.round(my * 10) / 10;
+      draw();
+    });
+    canvas.addEventListener('mouseup', () => { drag = null; });
+    canvas.addEventListener('mouseleave', () => { drag = null; });
+
+    draw();
+
+    Exercises.render($('exercises'), [
+      {
+        q: "Magnitude of vector (3, 4)?",
+        type: 'numeric', answer: 5, tol: 0.01,
+        explain: '√(3² + 4²) = √25 = 5. The 3-4-5 right triangle — memorize it.',
+      },
+      {
+        q: "Dot product of (1, 0) and (0, 1)?",
+        type: 'numeric', answer: 0, tol: 0,
+        explain: '1·0 + 0·1 = 0. Perpendicular vectors always have dot product 0. This is the geometric definition of orthogonality.',
+      },
+      {
+        q: "Angle (in degrees) between (1, 0) and (1, 1)?",
+        type: 'numeric', answer: 45, tol: 0.5,
+        explain: 'cos θ = (1·1 + 0·1)/(1 · √2) = 1/√2. So θ = 45°. The diagonal of a unit square makes 45° with each side.',
+      },
+      {
+        q: "If u and v point in OPPOSITE directions, the cosine of the angle between them is:",
+        type: 'mcq',
+        options: ['+1', '0', '−1', 'depends on their lengths'],
+        answer: 2,
+        explain: 'cos(180°) = −1. Cosine similarity ranges from +1 (parallel same direction) through 0 (perpendicular) to −1 (parallel opposite). Lengths don\'t affect direction.',
+      },
+      {
+        q: "Normalize vector (6, 8): what's its first component after normalization?",
+        type: 'numeric', answer: 0.6, tol: 0.01,
+        explain: '|(6,8)| = √(36+64) = 10. Normalized: (6/10, 8/10) = (0.6, 0.8). Normalization = "make it length 1, keep direction."',
+      },
+    ]);
+  </script>
+</body>
+</html>
