@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Day 10 — Bayes' Theorem</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="../assets/lesson.js"></script>
+</head>
+<body>
+  <main class="container">
+
+    <div class="panel">
+      <h3 style="margin-top:0">Derive it. Don't memorize it.</h3>
+      <p>Bayes' theorem is famously feared but completely trivial. From Day 9 you know two definitions:</p>
+      <p class="mono center">P(A | B) = P(A ∩ B) / P(B) &nbsp;&nbsp; and &nbsp;&nbsp; P(B | A) = P(A ∩ B) / P(A)</p>
+      <p>Rearrange the second: <span class="mono">P(A ∩ B) = P(B | A) · P(A)</span>. Substitute into the first:</p>
+      <p class="mono center" style="font-size: 1.2rem; color: var(--accent);">P(A | B) = P(B | A) · P(A) / P(B)</p>
+      <p>That's Bayes' theorem. Nothing more. <strong>Derive it every time</strong> — within a week, you won't need to anymore.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">The vocabulary (memorize)</h3>
+      <ul>
+        <li><strong>P(A)</strong> — the <em>prior</em>. What you believed about A before seeing evidence B.</li>
+        <li><strong>P(B | A)</strong> — the <em>likelihood</em>. How likely the evidence B is, assuming A is true.</li>
+        <li><strong>P(B)</strong> — the <em>marginal</em> or <em>evidence</em>. How likely the evidence is overall.</li>
+        <li><strong>P(A | B)</strong> — the <em>posterior</em>. Your updated belief about A after seeing B.</li>
+      </ul>
+      <p class="hint"><strong>The whole game:</strong> Bayes converts likelihoods (which you can model: "if I had the disease, would I test positive?") into posteriors (what you actually want to know: "given a positive test, do I have the disease?"). Likelihoods are forward; posteriors are backward. Bayes flips them.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">The disease test, properly</h3>
+      <p>The classic example. A test for a rare disease:</p>
+      <ul>
+        <li>Sensitivity (true-positive rate): 99%. If you have the disease, the test is positive 99% of the time.</li>
+        <li>Specificity (true-negative rate): 99%. If you don't have the disease, the test is negative 99% of the time.</li>
+        <li>Base rate (prevalence): 1%. 1 in 100 people have the disease.</li>
+      </ul>
+      <p><strong>You test positive. What's the probability you have the disease?</strong></p>
+      <p>Most people, including doctors, guess ~99%. The actual answer is ~50%. Here's the Bayes computation:</p>
+      <p class="mono">
+        P(D | +) = P(+ | D) · P(D) / P(+)<br>
+        P(+) = P(+ | D)·P(D) + P(+ | ¬D)·P(¬D) = 0.99 · 0.01 + 0.01 · 0.99 = 0.0198<br>
+        P(D | +) = (0.99 · 0.01) / 0.0198 = 0.5
+      </p>
+      <p>The intuition: even a 1% false-positive rate produces a lot of false positives when the disease is rare. They drown the true positives.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Interactive: Bayes calculator</h3>
+      <p>Slide the base rate, sensitivity, and specificity. See how the posterior P(disease | positive test) responds. Notice: <strong>the base rate matters more than you'd ever think.</strong></p>
+
+      <div class="controls">
+        <label>base rate (prevalence) %</label>
+        <input type="range" id="prior" min="0.1" max="50" step="0.1" value="1" />
+        <span class="val" id="priorV">1.0%</span>
+
+        <label>sensitivity (true positive %)</label>
+        <input type="range" id="sens" min="50" max="100" step="0.5" value="99" />
+        <span class="val" id="sensV">99.0%</span>
+
+        <label>specificity (true negative %)</label>
+        <input type="range" id="spec" min="50" max="100" step="0.5" value="99" />
+        <span class="val" id="specV">99.0%</span>
+      </div>
+
+      <table style="width:100%; margin-top: 14px;">
+        <tr><th>quantity</th><th>value</th></tr>
+        <tr><td>P(positive overall)</td><td class="mono" id="ppos">—</td></tr>
+        <tr><td><strong>P(disease | positive)</strong> (the posterior you want)</td><td class="mono" id="post"></td></tr>
+        <tr><td>P(disease | negative) — for comparison</td><td class="mono" id="postneg">—</td></tr>
+      </table>
+
+      <p class="hint" style="margin-top: 12px;"><strong>Try this:</strong> set prevalence to 50% (a flu-like situation, not rare). Now P(disease | positive) is ~99%. Same test, completely different reliability. Always ask: <em>what's the base rate?</em></p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Where this shows up at Google</h3>
+      <ul>
+        <li><strong>A/B test significance interpretation:</strong> "p &lt; 0.05" is P(data | null hypothesis), not P(null is true | data). Bayes-aware analysts don't confuse them.</li>
+        <li><strong>Spam filters:</strong> classical naïve Bayes. P(spam | words) ∝ P(words | spam) · P(spam).</li>
+        <li><strong>Recommender systems:</strong> P(user likes item | past behavior) — Bayesian posterior over preferences.</li>
+        <li><strong>Anomaly detection:</strong> P(anomaly | observation). Base rate of anomalies is tiny, so naive thresholds drown in false positives. Same disease-test math.</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Exercises</h3>
+      <div id="exercises"></div>
+    </div>
+
+  </main>
+
+  <script>
+    Lesson.init({ id: 'day-010', day: 10, title: "Bayes' Theorem", estMin: 30 });
+
+    const $ = id => document.getElementById(id);
+
+    function update() {
+      const p  = parseFloat($('prior').value) / 100;
+      const sn = parseFloat($('sens').value)  / 100;
+      const sp = parseFloat($('spec').value)  / 100;
+      $('priorV').textContent = (p * 100).toFixed(1) + '%';
+      $('sensV').textContent  = (sn * 100).toFixed(1) + '%';
+      $('specV').textContent  = (sp * 100).toFixed(1) + '%';
+      const ppos    = sn * p + (1 - sp) * (1 - p);
+      const post    = (sn * p) / (ppos || 1e-12);
+      const ppos_neg = (1 - sn) * p + sp * (1 - p);
+      const post_neg = ((1 - sn) * p) / (ppos_neg || 1e-12);
+      $('ppos').textContent = (ppos * 100).toFixed(2) + '%';
+      $('post').textContent = (post * 100).toFixed(2) + '%';
+      $('postneg').textContent = (post_neg * 100).toFixed(4) + '%';
+    }
+    ['prior', 'sens', 'spec'].forEach(id => $(id).addEventListener('input', update));
+    update();
+
+    Exercises.render($('exercises'), [
+      {
+        q: "A spam filter sees the word 'lottery'. P(lottery word | spam) = 0.4. P(lottery word | ham) = 0.01. Spam base rate = 30%. What's P(spam | lottery word)? (as a fraction, e.g. 0.83)",
+        type: 'numeric', answer: 0.9446, tol: 0.01,
+        explain: 'P(spam|lottery) = 0.4 · 0.3 / (0.4 · 0.3 + 0.01 · 0.7) = 0.12 / 0.127 ≈ 0.945. The high likelihood ratio (0.4 vs 0.01) overwhelms the prior.',
+      },
+      {
+        q: "A medical test: sensitivity 95%, specificity 95%, prevalence 0.1%. P(disease | positive)?",
+        type: 'numeric', answer: 0.0187, tol: 0.005,
+        explain: 'P(D|+) = 0.95·0.001 / (0.95·0.001 + 0.05·0.999) ≈ 0.00095 / 0.05089 ≈ 1.87%. With very rare disease, even a "good" test produces mostly false positives.',
+      },
+      {
+        q: "In Bayes\' theorem P(A|B) = P(B|A)·P(A)/P(B), what is P(A) called?",
+        type: 'mcq',
+        options: ['Posterior', 'Prior', 'Likelihood', 'Evidence'],
+        answer: 1,
+        explain: 'P(A) is the prior — what you believed before seeing evidence B. P(A|B) is the posterior (after).',
+      },
+      {
+        q: "If P(B|A) = 0.9, P(A) = 0.2, P(B) = 0.5, then P(A|B) = ?",
+        type: 'numeric', answer: 0.36, tol: 0.005,
+        explain: 'P(A|B) = P(B|A)·P(A)/P(B) = 0.9 · 0.2 / 0.5 = 0.18 / 0.5 = 0.36.',
+      },
+      {
+        q: "Why does prevalence (base rate) matter so much for the disease-test interpretation?",
+        type: 'mcq',
+        options: [
+          'It doesn\'t — only the test accuracy matters.',
+          'A rare condition means most of the positive tests are false positives, even with a good test.',
+          'Prevalence is just for record-keeping; the math doesn\'t use it.',
+          'Higher prevalence makes the test less reliable.',
+        ],
+        answer: 1,
+        explain: 'When the disease is rare, the population of healthy people is much larger, so even a small false-positive rate produces many false positives — often more than the true positives. The base rate determines whether the test is "useful" in practice.',
+      },
+    ]);
+  </script>
+</body>
+</html>

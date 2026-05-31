@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Day 13 — Sorting Algorithms</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="../assets/lesson.js"></script>
+</head>
+<body>
+  <main class="container">
+
+    <div class="panel">
+      <h3 style="margin-top:0">Track C focus: the SWE staple</h3>
+      <p>Sorting is the most-asked-about algorithm family in tech interviews. Not because anyone implements sort from scratch at work (you call <code class="mono">sorted()</code>), but because sorting is the cleanest playground for understanding <strong>divide and conquer, recursion, time/space tradeoffs, and the meaning of asymptotic bounds.</strong></p>
+      <p>Watching different algorithms sort the same array makes Big-O <em>visible</em>. Bubble sort literally crawls. Mergesort halves the work. You'll feel the complexity in your bones.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">The five you need to know</h3>
+      <table style="width:100%">
+        <tr><th>algorithm</th><th>best</th><th>avg</th><th>worst</th><th>extra space</th><th>stable?</th></tr>
+        <tr><td class="mono">Bubble</td><td class="mono">O(n)</td><td class="mono">O(n²)</td><td class="mono">O(n²)</td><td class="mono">O(1)</td><td>yes</td></tr>
+        <tr><td class="mono">Insertion</td><td class="mono">O(n)</td><td class="mono">O(n²)</td><td class="mono">O(n²)</td><td class="mono">O(1)</td><td>yes</td></tr>
+        <tr><td class="mono">Mergesort</td><td class="mono">O(n log n)</td><td class="mono">O(n log n)</td><td class="mono">O(n log n)</td><td class="mono">O(n)</td><td>yes</td></tr>
+        <tr><td class="mono">Quicksort</td><td class="mono">O(n log n)</td><td class="mono">O(n log n)</td><td class="mono">O(n²)</td><td class="mono">O(log n)</td><td>no</td></tr>
+        <tr><td class="mono">Heapsort</td><td class="mono">O(n log n)</td><td class="mono">O(n log n)</td><td class="mono">O(n log n)</td><td class="mono">O(1)</td><td>no</td></tr>
+      </table>
+      <p><strong>Stable</strong> = preserves the relative order of equal-keyed elements. Matters when sorting on a secondary key.</p>
+      <p>In practice: Python's <code class="mono">sorted()</code> is <strong>Timsort</strong> (mergesort + insertion-sort hybrid). C++'s <code class="mono">std::sort</code> is <strong>introsort</strong> (quicksort + heapsort fallback). Both are O(n log n) and adaptive.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">The two big ideas to internalize</h3>
+      <p><strong>1. Why all comparison-based sorts have a lower bound of Ω(n log n).</strong></p>
+      <p>To sort n items, you must distinguish among n! possible orderings. Each comparison gives 1 bit. So you need at least log₂(n!) ≈ n log₂ n comparisons. No clever comparison sort beats this — it's a fundamental information-theoretic bound.</p>
+      <p>(Radix sort and counting sort sidestep this — they're not comparison-based; they assume something about the data, like bounded integer keys.)</p>
+      <p><strong>2. Why mergesort wins on guarantees, quicksort wins on cache.</strong></p>
+      <p>Mergesort is O(n log n) every time, but uses O(n) extra memory. Quicksort is O(n log n) on average but O(n²) worst case — yet it's <em>faster in practice</em> because it sorts in place, has great cache behavior, and worst-case is rare with random pivot choice. This is the canonical "asymptotic vs constant-factor" trade-off.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Interactive: watch them race</h3>
+      <p>Pick an algorithm. Hit run. Watch the bars get sorted, with comparisons highlighted. Try with different n values — feel the O(n²) algorithms grind on n=80.</p>
+
+      <div class="row">
+        <label class="mono">algorithm</label>
+        <select id="algo">
+          <option value="bubble">bubble sort</option>
+          <option value="insertion">insertion sort</option>
+          <option value="merge">mergesort</option>
+          <option value="quick">quicksort</option>
+        </select>
+        <label class="mono">size n</label>
+        <input type="number" id="n" value="40" min="5" max="120" style="width: 80px;" />
+        <label class="mono">speed</label>
+        <input type="range" id="speed" min="1" max="200" step="1" value="50" style="width: 100px;" />
+        <button id="run">run</button>
+        <button id="reset" class="secondary">new array</button>
+      </div>
+
+      <canvas id="canvas" width="640" height="260" style="width:100%; max-width:640px; margin: 12px auto 0;"></canvas>
+
+      <p class="mono muted">comparisons: <span id="ncmp">0</span> · swaps/writes: <span id="nswp">0</span> · elapsed: <span id="elapsed">—</span></p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Exercises</h3>
+      <div id="exercises"></div>
+    </div>
+
+  </main>
+
+  <script>
+    Lesson.init({ id: 'day-013', day: 13, title: 'Sorting Algorithms', estMin: 30 });
+
+    const $ = id => document.getElementById(id);
+    const canvas = $('canvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+
+    let arr = [];
+    let highlight = new Set();
+    let cmp = 0, swp = 0;
+    let running = false;
+
+    function genArr() {
+      const n = parseInt($('n').value, 10);
+      arr = Array.from({ length: n }, () => Math.floor(Math.random() * (H - 30)) + 10);
+      cmp = 0; swp = 0;
+      highlight.clear();
+      $('ncmp').textContent = 0;
+      $('nswp').textContent = 0;
+      $('elapsed').textContent = '—';
+      draw();
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      const bw = W / arr.length;
+      arr.forEach((v, i) => {
+        ctx.fillStyle = highlight.has(i) ? '#ff7a7a' : '#7cc4ff';
+        ctx.fillRect(i * bw + 1, H - v, Math.max(1, bw - 2), v);
+      });
+    }
+
+    function delay() {
+      const s = parseInt($('speed').value, 10);
+      return new Promise(r => setTimeout(r, 201 - s));
+    }
+    async function step(...indices) {
+      highlight = new Set(indices);
+      draw();
+      $('ncmp').textContent = cmp;
+      $('nswp').textContent = swp;
+      await delay();
+    }
+
+    async function bubbleSort() {
+      const n = arr.length;
+      for (let i = 0; i < n; i++) {
+        let swapped = false;
+        for (let j = 0; j < n - 1 - i; j++) {
+          cmp++;
+          await step(j, j + 1);
+          if (arr[j] > arr[j + 1]) {
+            [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+            swp++;
+            swapped = true;
+          }
+        }
+        if (!swapped) break;
+      }
+    }
+
+    async function insertionSort() {
+      for (let i = 1; i < arr.length; i++) {
+        let j = i;
+        while (j > 0) {
+          cmp++;
+          await step(j - 1, j);
+          if (arr[j - 1] > arr[j]) {
+            [arr[j - 1], arr[j]] = [arr[j], arr[j - 1]];
+            swp++;
+            j--;
+          } else break;
+        }
+      }
+    }
+
+    async function mergeSort(lo = 0, hi = arr.length) {
+      if (hi - lo <= 1) return;
+      const mid = (lo + hi) >> 1;
+      await mergeSort(lo, mid);
+      await mergeSort(mid, hi);
+      const merged = [];
+      let i = lo, j = mid;
+      while (i < mid && j < hi) {
+        cmp++;
+        await step(i, j);
+        if (arr[i] <= arr[j]) merged.push(arr[i++]);
+        else merged.push(arr[j++]);
+      }
+      while (i < mid) merged.push(arr[i++]);
+      while (j < hi)  merged.push(arr[j++]);
+      for (let k = 0; k < merged.length; k++) {
+        arr[lo + k] = merged[k];
+        swp++;
+      }
+    }
+
+    async function quickSort(lo = 0, hi = arr.length - 1) {
+      if (lo >= hi) return;
+      const pivot = arr[hi];
+      let i = lo;
+      for (let j = lo; j < hi; j++) {
+        cmp++;
+        await step(j, hi);
+        if (arr[j] <= pivot) {
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+          swp++;
+          i++;
+        }
+      }
+      [arr[i], arr[hi]] = [arr[hi], arr[i]];
+      swp++;
+      await quickSort(lo, i - 1);
+      await quickSort(i + 1, hi);
+    }
+
+    $('run').addEventListener('click', async () => {
+      if (running) return;
+      running = true;
+      const algo = $('algo').value;
+      const t0 = performance.now();
+      if (algo === 'bubble') await bubbleSort();
+      else if (algo === 'insertion') await insertionSort();
+      else if (algo === 'merge') await mergeSort();
+      else if (algo === 'quick') await quickSort();
+      highlight.clear(); draw();
+      $('elapsed').textContent = ((performance.now() - t0) / 1000).toFixed(2) + 's';
+      running = false;
+    });
+    $('reset').addEventListener('click', genArr);
+    $('n').addEventListener('change', genArr);
+    genArr();
+
+    Exercises.render($('exercises'), [
+      {
+        q: "Average-case complexity of mergesort?",
+        type: 'mcq',
+        options: ['O(n)', 'O(n log n)', 'O(n²)', 'O(2ⁿ)'],
+        answer: 1,
+        explain: 'O(n log n) — and it\'s also the worst case. The reliability of mergesort\'s guarantee is one of its strengths.',
+      },
+      {
+        q: "Worst-case complexity of quicksort?",
+        type: 'mcq',
+        options: ['O(n log n)', 'O(n²)', 'O(n)', 'O(n!)'],
+        answer: 1,
+        explain: 'O(n²) when the pivot is always the smallest or largest element (e.g., already-sorted input with naive pivot choice). Randomized pivot or median-of-three makes this vanishingly rare in practice.',
+      },
+      {
+        q: "Why can\'t any comparison-based sort beat O(n log n)?",
+        type: 'mcq',
+        options: [
+          'Engineers haven\'t figured out a better algorithm yet.',
+          'There are n! possible orderings, and each comparison gives 1 bit of info, so you need log₂(n!) ≈ n log n comparisons.',
+          'Memory limits prevent faster sorting.',
+          'You actually can — radix sort is O(n).',
+        ],
+        answer: 1,
+        explain: 'Information-theoretic lower bound. log₂(n!) ≈ n log₂ n (by Stirling). Radix sort beats this, but it\'s NOT comparison-based — it uses extra assumptions about the keys.',
+      },
+      {
+        q: "Which sort is \"stable\" (preserves relative order of equal elements)?",
+        type: 'mcq',
+        options: ['Quicksort', 'Heapsort', 'Mergesort', 'All of the above'],
+        answer: 2,
+        explain: 'Mergesort is stable (classical implementation). Quicksort and heapsort are not. Stability matters when you sort by a secondary key (e.g., sort employees by name, then by department, expecting both sortings to "stick").',
+      },
+      {
+        q: "Python\'s sorted() uses which algorithm?",
+        type: 'mcq',
+        options: ['Quicksort', 'Mergesort (pure)', 'Timsort (mergesort + insertion hybrid)', 'Bubble sort'],
+        answer: 2,
+        explain: 'Timsort: a hybrid of mergesort and insertion sort, optimized for real-world data which often has pre-sorted runs. O(n log n) worst case, O(n) best case. Designed by Tim Peters for Python in 2002.',
+      },
+    ]);
+  </script>
+</body>
+</html>

@@ -36,7 +36,8 @@
     <h2>Today's lesson</h2>
     <div id="todayCard"></div>
 
-    <h2>Month 1 — Week 1: Restart the engine</h2>
+    <h2>Month 1 — Weeks 1 &amp; 2</h2>
+    <p class="muted">Week 1: restart the engine · Week 2: probability deep + sorting + PE #3</p>
     <div class="day-list" id="weekList"></div>
 
     <h2>The full curriculum</h2>
@@ -68,13 +69,22 @@
 
   <script>
     const lessons = [
-      { day: 1, id: 'day-001', title: 'Fermi & estimation', file: 'lessons/day-001-fermi.html', est: 25 },
-      { day: 2, id: 'day-002', title: 'Percentages, growth, into Big-O thinking', file: 'lessons/day-002-percentages.html', est: 30 },
-      { day: 3, id: 'day-003', title: 'Vectors as arrows', file: 'lessons/day-003-vectors.html', est: 30 },
-      { day: 4, id: 'day-004', title: 'Matrices as transformations', file: 'lessons/day-004-matrices.html', est: 30 },
-      { day: 5, id: 'day-005', title: 'Algorithm complexity — your first analysis', file: 'lessons/day-005-complexity.html', est: 30 },
-      { day: 6, id: 'day-006', title: 'Discrete probability — counting & sample spaces', file: 'lessons/day-006-counting.html', est: 30 },
-      { day: 7, id: 'day-007', title: 'Your first Project Euler problem, properly', file: 'lessons/day-007-project-euler.html', est: 35 },
+      // Week 1 — Restart the engine
+      { day: 1,  id: 'day-001', title: 'Fermi & estimation', file: 'lessons/day-001-fermi.html', est: 25 },
+      { day: 2,  id: 'day-002', title: 'Percentages, growth, into Big-O thinking', file: 'lessons/day-002-percentages.html', est: 30 },
+      { day: 3,  id: 'day-003', title: 'Vectors as arrows', file: 'lessons/day-003-vectors.html', est: 30 },
+      { day: 4,  id: 'day-004', title: 'Matrices as transformations', file: 'lessons/day-004-matrices.html', est: 30 },
+      { day: 5,  id: 'day-005', title: 'Algorithm complexity — your first analysis', file: 'lessons/day-005-complexity.html', est: 30 },
+      { day: 6,  id: 'day-006', title: 'Discrete probability — counting & sample spaces', file: 'lessons/day-006-counting.html', est: 30 },
+      { day: 7,  id: 'day-007', title: 'Your first Project Euler problem, properly', file: 'lessons/day-007-project-euler.html', est: 35 },
+      // Week 2 — Probability deep + sorting
+      { day: 8,  id: 'day-008', title: 'Sample spaces, events, axioms', file: 'lessons/day-008-sample-spaces.html', est: 30 },
+      { day: 9,  id: 'day-009', title: 'Conditional probability', file: 'lessons/day-009-conditional.html', est: 30 },
+      { day: 10, id: 'day-010', title: "Bayes' theorem — derive it", file: 'lessons/day-010-bayes.html', est: 30 },
+      { day: 11, id: 'day-011', title: 'Random variables & expectation', file: 'lessons/day-011-random-variables.html', est: 30 },
+      { day: 12, id: 'day-012', title: 'Variance, std, covariance', file: 'lessons/day-012-variance.html', est: 30 },
+      { day: 13, id: 'day-013', title: 'Sorting algorithms', file: 'lessons/day-013-sorting.html', est: 30 },
+      { day: 14, id: 'day-014', title: 'Week 2 capstone: Bayes in real life + PE #3', file: 'lessons/day-014-capstone.html', est: 40 },
     ];
 
     function render() {

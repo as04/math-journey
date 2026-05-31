@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Day 12 — Variance, Std, Covariance</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="../assets/lesson.js"></script>
+</head>
+<body>
+  <main class="container">
+
+    <div class="panel">
+      <h3 style="margin-top:0">Why we need spread, not just average</h3>
+      <p>Two bets, both with E[X] = $0:</p>
+      <ul>
+        <li>Bet A: win $1, lose $1, each with probability 1/2.</li>
+        <li>Bet B: win $1,000,000, lose $1,000,000, each with probability 1/2.</li>
+      </ul>
+      <p>Same expectation, completely different bets. Expectation alone is insufficient. We need a measure of <em>spread</em> — how far values typically deviate from the mean. That's <strong>variance</strong>.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Definitions</h3>
+      <p class="mono">Var(X) = E[(X − μ)²] &nbsp;&nbsp; where μ = E[X]</p>
+      <p>Average squared distance from the mean. Always ≥ 0; zero only if X is constant.</p>
+      <p>Two algebraic forms — both useful:</p>
+      <p class="mono">Var(X) = E[X²] − (E[X])²</p>
+      <p>The "expectation of the square minus square of the expectation" form. Often easier to compute.</p>
+      <p>The <strong>standard deviation</strong> is just the square root: <span class="mono">σ = √Var(X)</span>. Same units as X (variance is in squared units). Use std for human-readable spread; variance is what the math operates on.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Variance rules (unlike expectation, has conditions)</h3>
+      <ul>
+        <li><span class="mono">Var(a·X + b) = a² · Var(X)</span> — constants come out squared; shifts don't matter.</li>
+        <li><span class="mono">Var(X + Y) = Var(X) + Var(Y) + 2·Cov(X, Y)</span></li>
+        <li>If X, Y <strong>independent</strong>: Cov(X, Y) = 0, so Var(X + Y) = Var(X) + Var(Y).</li>
+      </ul>
+      <p class="hint"><strong>The √n result:</strong> n independent samples of X. Sample mean has variance σ²/n. Std of the mean is σ/√n. <em>This is why "more data" reduces uncertainty as the square root of n, not linearly.</em> The reason your A/B test needs 4× the sample to halve the uncertainty.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Covariance and correlation</h3>
+      <p><span class="mono">Cov(X, Y) = E[(X − μₓ)(Y − μᵧ)]</span></p>
+      <p>Positive cov: X and Y tend to move <em>together</em>. Negative: they move <em>opposite</em>. Zero: no linear relationship (but they could still be related nonlinearly).</p>
+      <p>Covariance has weird units (X-units × Y-units). To normalize, use <strong>correlation</strong>:</p>
+      <p class="mono">ρ(X, Y) = Cov(X, Y) / (σₓ · σᵧ)</p>
+      <p>Always in [−1, 1]. ρ = ±1 means perfect linear relationship. ρ = 0 means no linear relationship (different from independent).</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Interactive: drag points, watch the stats</h3>
+      <p>Click to add points. Right-click (or shift-click) to remove. The page recomputes mean, variance, std, and correlation in real time.</p>
+
+      <canvas id="canvas" width="500" height="500" style="width:100%; max-width:500px; margin: 0 auto; cursor: crosshair;"></canvas>
+
+      <table style="width:100%; max-width: 500px; margin: 12px auto 0;">
+        <tr><th>quantity</th><th>value</th></tr>
+        <tr><td>n (points)</td><td class="mono" id="nstat">0</td></tr>
+        <tr><td>mean x, y</td><td class="mono" id="mean">—</td></tr>
+        <tr><td>Var(x), Var(y)</td><td class="mono" id="var">—</td></tr>
+        <tr><td>Std(x), Std(y)</td><td class="mono" id="std">—</td></tr>
+        <tr><td>Cov(x, y)</td><td class="mono" id="cov">—</td></tr>
+        <tr><td>Corr ρ(x, y)</td><td class="mono" id="corr">—</td></tr>
+      </table>
+
+      <div class="row" style="margin-top: 12px;">
+        <button class="secondary" id="preset_pos">load: positive correlation</button>
+        <button class="secondary" id="preset_neg">load: negative correlation</button>
+        <button class="secondary" id="preset_zero">load: zero correlation</button>
+        <button class="secondary" id="clear">clear all</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Exercises</h3>
+      <div id="exercises"></div>
+    </div>
+
+  </main>
+
+  <script>
+    Lesson.init({ id: 'day-012', day: 12, title: 'Variance, Std, Covariance', estMin: 30 });
+
+    const $ = id => document.getElementById(id);
+    const canvas = $('canvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const PAD = 30;
+    let pts = [];
+
+    const xToScreen = x => PAD + ((x + 5) / 10) * (W - 2 * PAD);
+    const yToScreen = y => H - PAD - ((y + 5) / 10) * (H - 2 * PAD);
+    const fromScreen = (sx, sy) => [((sx - PAD) / (W - 2 * PAD)) * 10 - 5,
+                                     ((H - PAD - sy) / (H - 2 * PAD)) * 10 - 5];
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      // grid
+      ctx.strokeStyle = '#2a2f3a';
+      ctx.lineWidth = 1;
+      for (let i = -5; i <= 5; i++) {
+        ctx.beginPath();
+        ctx.moveTo(xToScreen(i), yToScreen(-5));
+        ctx.lineTo(xToScreen(i), yToScreen(5));
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(xToScreen(-5), yToScreen(i));
+        ctx.lineTo(xToScreen(5), yToScreen(i));
+        ctx.stroke();
+      }
+      // axes
+      ctx.strokeStyle = '#9aa0aa';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(xToScreen(-5), yToScreen(0));
+      ctx.lineTo(xToScreen(5), yToScreen(0));
+      ctx.moveTo(xToScreen(0), yToScreen(-5));
+      ctx.lineTo(xToScreen(0), yToScreen(5));
+      ctx.stroke();
+      // points
+      pts.forEach(p => {
+        ctx.fillStyle = '#7cc4ff';
+        ctx.beginPath();
+        ctx.arc(xToScreen(p[0]), yToScreen(p[1]), 5, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      // mean cross
+      if (pts.length) {
+        const mx = pts.reduce((s, p) => s + p[0], 0) / pts.length;
+        const my = pts.reduce((s, p) => s + p[1], 0) / pts.length;
+        ctx.strokeStyle = '#ffb86b';
+        ctx.lineWidth = 2;
+        const sx = xToScreen(mx), sy = yToScreen(my);
+        ctx.beginPath();
+        ctx.moveTo(sx - 8, sy); ctx.lineTo(sx + 8, sy);
+        ctx.moveTo(sx, sy - 8); ctx.lineTo(sx, sy + 8);
+        ctx.stroke();
+      }
+    }
+
+    function stats() {
+      const n = pts.length;
+      $('nstat').textContent = n;
+      if (n < 2) {
+        ['mean','var','std','cov','corr'].forEach(id => $(id).textContent = '—');
+        return;
+      }
+      const mx = pts.reduce((s, p) => s + p[0], 0) / n;
+      const my = pts.reduce((s, p) => s + p[1], 0) / n;
+      const vx = pts.reduce((s, p) => s + (p[0] - mx) ** 2, 0) / n;
+      const vy = pts.reduce((s, p) => s + (p[1] - my) ** 2, 0) / n;
+      const cov = pts.reduce((s, p) => s + (p[0] - mx) * (p[1] - my), 0) / n;
+      const corr = cov / (Math.sqrt(vx * vy) || 1);
+      $('mean').textContent = `${mx.toFixed(2)}, ${my.toFixed(2)}`;
+      $('var').textContent  = `${vx.toFixed(2)}, ${vy.toFixed(2)}`;
+      $('std').textContent  = `${Math.sqrt(vx).toFixed(2)}, ${Math.sqrt(vy).toFixed(2)}`;
+      $('cov').textContent  = cov.toFixed(2);
+      $('corr').textContent = corr.toFixed(3);
+    }
+
+    function update() { draw(); stats(); }
+
+    canvas.addEventListener('click', e => {
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) * (W / rect.width);
+      const y = (e.clientY - rect.top) * (H / rect.height);
+      if (e.shiftKey) {
+        // remove nearest
+        let best = -1, bestD = 100;
+        pts.forEach((p, i) => {
+          const d = Math.hypot(xToScreen(p[0]) - x, yToScreen(p[1]) - y);
+          if (d < bestD) { bestD = d; best = i; }
+        });
+        if (best >= 0) pts.splice(best, 1);
+      } else {
+        const [px, py] = fromScreen(x, y);
+        pts.push([px, py]);
+      }
+      update();
+    });
+
+    $('preset_pos').addEventListener('click', () => {
+      pts = []; for (let i = 0; i < 20; i++) {
+        const x = (Math.random() - 0.5) * 8;
+        const y = x * 0.7 + (Math.random() - 0.5) * 2;
+        pts.push([x, y]);
+      }
+      update();
+    });
+    $('preset_neg').addEventListener('click', () => {
+      pts = []; for (let i = 0; i < 20; i++) {
+        const x = (Math.random() - 0.5) * 8;
+        const y = -x * 0.7 + (Math.random() - 0.5) * 2;
+        pts.push([x, y]);
+      }
+      update();
+    });
+    $('preset_zero').addEventListener('click', () => {
+      pts = []; for (let i = 0; i < 20; i++) {
+        pts.push([(Math.random() - 0.5) * 8, (Math.random() - 0.5) * 8]);
+      }
+      update();
+    });
+    $('clear').addEventListener('click', () => { pts = []; update(); });
+
+    update();
+
+    Exercises.render($('exercises'), [
+      {
+        q: "X is a fair die (E[X] = 3.5). What's Var(X)?",
+        type: 'numeric', answer: 2.917, tol: 0.01,
+        explain: 'E[X²] = (1+4+9+16+25+36)/6 = 91/6 ≈ 15.17. Var(X) = E[X²] − (E[X])² = 15.17 − 12.25 ≈ 2.92.',
+      },
+      {
+        q: "If Var(X) = 16, then Std(X) = ?",
+        type: 'numeric', answer: 4, tol: 0,
+        explain: 'Std is the square root of variance. √16 = 4. Std has the same units as X.',
+      },
+      {
+        q: "X and Y are independent. Var(X) = 4, Var(Y) = 9. What is Var(X + Y)?",
+        type: 'numeric', answer: 13, tol: 0,
+        explain: 'For independent random variables: Var(X+Y) = Var(X) + Var(Y) = 4 + 9 = 13. Note: stds don\'t add — 2+3 ≠ √13. Variances add (when independent).',
+      },
+      {
+        q: "100 independent samples of X with Std(X) = 10. Std of the sample mean is approximately:",
+        type: 'numeric', answer: 1, tol: 0.01,
+        explain: 'σ / √n = 10 / √100 = 10/10 = 1. This √n reduction is why "more data" helps but with diminishing returns. To halve uncertainty, you need 4× the samples.',
+      },
+      {
+        q: "Correlation ρ(X, Y) = 0 means:",
+        type: 'mcq',
+        options: [
+          'X and Y are independent.',
+          'X and Y have no linear relationship — but could still be related nonlinearly.',
+          'X and Y are disjoint.',
+          'X = Y.',
+        ],
+        answer: 1,
+        explain: 'Zero correlation means zero LINEAR correlation. Two variables can be tightly related (e.g., Y = X²) and still have correlation 0 if the relationship is non-linear and symmetric around the mean. Independence implies zero correlation, but not vice versa.',
+      },
+    ]);
+  </script>
+</body>
+</html>

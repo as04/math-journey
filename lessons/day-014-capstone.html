@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Day 14 — Week 2 Capstone: Bayes in Real Life + PE #3</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="../assets/lesson.js"></script>
+</head>
+<body>
+  <main class="container">
+
+    <div class="panel">
+      <h3 style="margin-top:0">Two-week milestone</h3>
+      <p>You've covered Fermi estimation, percentages/growth, vectors, matrices, Big-O, counting, sample spaces, conditional probability, Bayes, random variables, variance, and sorting. Today: <strong>integrate</strong>. Two challenges: one Bayes-flavored problem from real work life, and Project Euler Problem 3.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Part 1: Bayes in real life — three scenarios</h3>
+
+      <h4>Scenario A — A/B test significance</h4>
+      <p>You ship an experiment. The "control" converts at 5.0%, the "treatment" at 5.4%. p-value = 0.04. Should you ship?</p>
+      <p>The frequentist answer: "yes, p &lt; 0.05, statistically significant." The <em>Bayesian-thinking</em> answer is harder: <strong>p(H₀ | data) ≠ p(data | H₀)</strong>. The p-value is the second; what you actually want is the first. If your prior belief in the effect being real was already low (most experiments don't work), even a "significant" p might leave the posterior probability of a real effect at &lt; 50%.</p>
+      <p>This is why ML teams at Google increasingly use Bayesian A/B testing (often via tools like Croak or Vizier). The math is the disease-test math from Day 10.</p>
+
+      <h4>Scenario B — Code review heuristic</h4>
+      <p>You see a PR with 500 lines of changes. What's P(this PR has a bug | this PR is large)?</p>
+      <p>Without numbers: large PRs are more likely to have bugs, so P(bug | large) &gt; P(bug). But by how much? You'd need: base rate of bugs per PR (P(bug)), and P(large | bug) vs P(large | no bug). The shape of the reasoning is Bayesian. The conclusion ("split this PR before merging") is the engineering action that flows from the math.</p>
+
+      <h4>Scenario C — Spam filter intuition</h4>
+      <p>Naïve Bayes spam filter: <span class="mono">P(spam | words) ∝ P(words | spam) · P(spam)</span>. "Naïve" because we assume words are independent given the class (which is wrong, but works well in practice). The multiplication of many small likelihoods can underflow floating-point — so real implementations sum log-probabilities instead. (Another reason log-thinking matters in CS.)</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Interactive: Bayes for an A/B test</h3>
+      <p>Set your prior belief that the treatment is better than control. Set the observed p-value. The widget computes the posterior probability that the treatment is actually better, using a simple Bayesian update.</p>
+      <p>(This is a simplification — real Bayesian A/B testing uses full posterior distributions over conversion rates. But this captures the conceptual move.)</p>
+
+      <div class="controls">
+        <label>prior P(treatment is better)</label>
+        <input type="range" id="prior" min="0.05" max="0.95" step="0.01" value="0.30" />
+        <span class="val" id="priorV">0.30</span>
+
+        <label>p-value observed</label>
+        <input type="range" id="pval" min="0.001" max="0.20" step="0.001" value="0.040" />
+        <span class="val" id="pvalV">0.040</span>
+      </div>
+
+      <table style="width:100%; margin-top: 14px;">
+        <tr><th>quantity</th><th>value</th></tr>
+        <tr><td>prior P(real effect)</td><td class="mono" id="prior2">—</td></tr>
+        <tr><td>likelihood ratio (under simple model)</td><td class="mono" id="lr">—</td></tr>
+        <tr><td><strong>posterior P(real effect)</strong></td><td class="mono" id="post">—</td></tr>
+      </table>
+      <p class="muted" style="margin-top: 8px;">Simple Bayesian update with assumed power = 0.80. Notice: with a low prior (most experiments don't work), a p = 0.04 leaves the posterior modest — often well under 90%.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Part 2: Project Euler #3 — Largest prime factor</h3>
+      <p class="hint">"The prime factors of 13195 are 5, 7, 13 and 29. What is the largest prime factor of the number 600851475143?"</p>
+
+      <h4>Step 1 — Naïve approach (and why it dies)</h4>
+      <pre class="mono" style="background:var(--panel-2); padding: 12px; border-radius: 6px; overflow-x:auto;">def largest_prime_factor_naive(n):
+    largest = 1
+    for i in range(2, n + 1):
+        if n % i == 0:
+            # check if i is prime by trial division
+            is_prime = all(i % j != 0 for j in range(2, int(i**0.5)+1))
+            if is_prime:
+                largest = i
+    return largest
+</pre>
+      <p>For N = 600,851,475,143, this checks ~6×10¹¹ values. Each check itself is non-trivial. Hours, maybe days.</p>
+
+      <h4>Step 2 — The math insight</h4>
+      <p>To find the largest prime factor, <em>divide out small primes first</em>:</p>
+      <ol>
+        <li>While n is divisible by 2, divide. Then n has no more factor of 2.</li>
+        <li>Try odd factors 3, 5, 7, ... up to <span class="mono">√n</span>. Each time you find one, divide it out as many times as possible. (This guarantees the factor is prime — anything that divides n at this point and is ≤ √n must be prime, since composites would have already been split.)</li>
+        <li>If after all this n &gt; 1, that remaining n is itself prime — and it's the largest factor.</li>
+      </ol>
+      <p>Why stop at √n? Because if n has any factor &gt; √n, it has a corresponding factor ≤ √n. So if you've removed all factors ≤ √n, what's left is either 1 or a single large prime.</p>
+
+      <h4>Step 3 — Optimized solution</h4>
+      <pre class="mono" style="background:var(--panel-2); padding: 12px; border-radius: 6px; overflow-x:auto;">def largest_prime_factor(n):
+    largest = 1
+    # factor out 2s
+    while n % 2 == 0:
+        largest = 2
+        n //= 2
+    # factor out odd primes up to sqrt(n)
+    f = 3
+    while f * f &lt;= n:
+        while n % f == 0:
+            largest = f
+            n //= f
+        f += 2
+    # whatever remains (if > 1) is itself prime
+    if n &gt; 1:
+        largest = n
+    return largest
+
+print(largest_prime_factor(600851475143))  # 6857
+</pre>
+      <p>Complexity: <strong>O(√n)</strong> in the worst case. Runs in milliseconds for the PE problem. From "days" to "milliseconds" via one math insight.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">What you've earned in 2 weeks</h3>
+      <p>If you've done all 14 days end-to-end, here's what's now in your head:</p>
+      <ul>
+        <li>Mental math + Fermi estimation as a daily habit.</li>
+        <li>Vectors and matrices as geometric objects (not just arrays of numbers).</li>
+        <li>Big-O fluency — read code, name its complexity.</li>
+        <li>The full probability foundation: sample spaces, axioms, conditional, Bayes, RVs, expectation, variance, covariance.</li>
+        <li>Sorting algorithms and their tradeoffs.</li>
+        <li>Three solved Project Euler problems with both brute-force and math-insight solutions.</li>
+      </ul>
+      <p>That's a real skill set. If you push it into your work this week — use Bayes-thinking in your next meeting, do a Fermi estimate before signing off on a project, optimize one piece of code by recognizing its math structure — you'll feel the return immediately. The math is leaving your head and entering your work.</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Exercises</h3>
+      <div id="exercises"></div>
+    </div>
+
+  </main>
+
+  <script>
+    Lesson.init({ id: 'day-014', day: 14, title: 'Week 2 Capstone', estMin: 40 });
+
+    const $ = id => document.getElementById(id);
+
+    function update() {
+      const prior = parseFloat($('prior').value);
+      const p     = parseFloat($('pval').value);
+      $('priorV').textContent = prior.toFixed(2);
+      $('pvalV').textContent  = p.toFixed(3);
+
+      // Simple model: P(data | H1) = power = 0.8, P(data | H0) = p-value
+      const power = 0.8;
+      const lr = power / Math.max(p, 1e-6);
+      // posterior odds = prior odds * LR; convert back to probability
+      const priorOdds = prior / (1 - prior);
+      const postOdds = priorOdds * lr;
+      const post = postOdds / (1 + postOdds);
+
+      $('prior2').textContent = prior.toFixed(2);
+      $('lr').textContent     = lr.toFixed(1);
+      $('post').textContent   = post.toFixed(3);
+    }
+    ['prior', 'pval'].forEach(id => $(id).addEventListener('input', update));
+    update();
+
+    Exercises.render($('exercises'), [
+      {
+        q: "Largest prime factor of 600851475143?",
+        type: 'numeric', answer: 6857, tol: 0,
+        explain: '6857. Factoring: 600851475143 = 71 × 839 × 1471 × 6857. The largest prime factor is 6857. Your code should run in microseconds.',
+      },
+      {
+        q: "In a Bayesian A/B test interpretation: you observe p = 0.03, but your prior belief that the treatment helps was only 0.10. The posterior is roughly:",
+        type: 'mcq',
+        options: ['~99%', '~75%', '~50%', '~25%'],
+        answer: 1,
+        explain: 'With prior 0.10 and LR ≈ 0.8/0.03 ≈ 27, posterior odds ≈ (0.10/0.90) × 27 ≈ 3. Posterior probability ≈ 3/4 = 75%. The low prior pulls the "significant" p-value down considerably. Notice how this differs from the naive "p < 0.05 → confident effect" reading.',
+      },
+      {
+        q: "Why is trial division up to √n enough to find all prime factors of n?",
+        type: 'mcq',
+        options: [
+          'It\'s not — you sometimes need to go to n.',
+          'Because √n is the median of all factors.',
+          'Because if n has a factor > √n, then n/factor is < √n and would have been found first.',
+          'Because most primes are below √n.',
+        ],
+        answer: 2,
+        explain: 'If n = a · b with a ≤ b, then a ≤ √n. So every composite factor pairs with one ≤ √n. After removing all such factors, the residue is either 1 or a single prime > √n.',
+      },
+      {
+        q: "Linearity of expectation: roll 100 dice, sum them. E[sum] = ?",
+        type: 'numeric', answer: 350, tol: 0,
+        explain: '100 × 3.5 = 350. Day 11 result, re-tested.',
+      },
+      {
+        q: "When you compute Bayes\' theorem P(A|B) = P(B|A)P(A)/P(B), the denominator P(B) is often computed by:",
+        type: 'mcq',
+        options: [
+          'Looking it up in a table.',
+          'Marginalizing over A: P(B) = P(B|A)P(A) + P(B|¬A)P(¬A).',
+          'It\'s always 1.',
+          'Setting it equal to P(B|A).',
+        ],
+        answer: 1,
+        explain: 'P(B) = Σ over partitions of the sample space of P(B|partition)·P(partition). For binary hypotheses, that\'s P(B|A)P(A) + P(B|¬A)P(¬A). This is the law of total probability.',
+      },
+    ]);
+  </script>
+</body>
+</html>

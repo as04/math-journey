@@ -105,17 +105,17 @@ After 12 months of this regime + applying actively, you have a realistic shot at
 | 6 | Discrete probability — counting & sample spaces | A, B | ✅ built |
 | 7 | Your first Project Euler problem, properly | A, C | ✅ built |
 
-### Week 2 — Probability & Bayes + algorithms warm-up
+### Week 2 — Probability deep + sorting + PE #3
 
-| Day | Title |
-|---|---|
-| 8 | Sample spaces, events, axioms |
-| 9 | Conditional probability — the renormalization view |
-| 10 | Bayes — derive it, don't memorize |
-| 11 | Random variables & expectation |
-| 12 | Variance, std, covariance |
-| 13 | Sorting algorithms — comparison & intuition (Track C focus) |
-| 14 | Bayes capstone + 2nd Project Euler problem |
+| Day | Title | Tracks | Status |
+|---|---|---|---|
+| 8 | Sample spaces, events, axioms | A, B | ✅ built |
+| 9 | Conditional probability | A, B | ✅ built |
+| 10 | Bayes' theorem — derive it | A, B | ✅ built |
+| 11 | Random variables & expectation | A, B | ✅ built |
+| 12 | Variance, std, covariance | A, B | ✅ built |
+| 13 | Sorting algorithms | A, C | ✅ built |
+| 14 | Week 2 capstone: Bayes in real life + PE #3 | A, B, C | ✅ built |
 
 ### Week 3 — Linear algebra deeper + calculus restart + recursion
 

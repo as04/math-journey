@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Day 9 — Conditional Probability</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="../assets/lesson.js"></script>
+</head>
+<body>
+  <main class="container">
+
+    <div class="panel">
+      <h3 style="margin-top:0">The renormalization view</h3>
+      <p>Conditional probability is the single most useful — and most misused — idea in applied probability. The whole game is captured in one formula:</p>
+      <p class="mono center" style="font-size: 1.15rem;">P(A | B) = P(A ∩ B) / P(B)</p>
+      <p>Read aloud: <em>"probability of A given B"</em>. Mental model: <strong>you've been told B happened, so throw away the rest of the sample space. Renormalize. Now, what fraction of B is also A?</strong></p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Visual: two dice</h3>
+      <p>Roll two dice. P(sum = 8) = 5/36 (favorable: (2,6),(3,5),(4,4),(5,3),(6,2)).</p>
+      <p>Now suppose someone tells you the first die was a 3. Your sample space shrinks from 36 to 6. The only sum-8 outcome consistent with first-die=3 is (3,5) — so P(sum=8 | first die = 3) = 1/6.</p>
+      <p>Computed via the formula: P(sum=8 AND first=3) = 1/36. P(first=3) = 6/36 = 1/6. So P(sum=8 | first=3) = (1/36) / (1/6) = 1/6. ✓</p>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Two famous traps</h3>
+      <p><strong>Trap 1: P(A|B) ≠ P(B|A).</strong></p>
+      <ul>
+        <li>P(person is a basketball player | person is tall) is fairly high.</li>
+        <li>P(person is tall | person is a basketball player) is essentially 1.</li>
+        <li>These are very different numbers. Swapping them is the prosecutor's fallacy and underlies many bad statistical arguments in real life.</li>
+      </ul>
+      <p><strong>Trap 2: independence vs disjoint.</strong></p>
+      <ul>
+        <li><strong>Disjoint</strong> A and B: P(A ∩ B) = 0. They <em>can't both happen</em>. (Like "die shows 3" and "die shows 5".)</li>
+        <li><strong>Independent</strong> A and B: P(A ∩ B) = P(A)·P(B). Knowing one tells you <em>nothing</em> about the other. (Like "first die" and "second die".)</li>
+        <li>These are nearly opposite concepts, but they get conflated constantly. Disjoint events with positive probability are <em>maximally dependent</em> (one happening rules out the other).</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Interactive: see the renormalization</h3>
+      <p>The 6×6 grid is the sample space of two dice. Click a row to <em>condition on</em> first-die value. The selected event ("sum equals target") is highlighted. Watch how conditioning shrinks the relevant space and changes the probability.</p>
+
+      <div class="row">
+        <label class="mono">target sum</label>
+        <input type="number" id="target" value="8" min="2" max="12" style="width: 80px;" />
+        <label class="mono">condition: first die =</label>
+        <select id="cond">
+          <option value="">(no condition)</option>
+          <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+          <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+        </select>
+      </div>
+
+      <div id="grid" style="display: grid; grid-template-columns: 30px repeat(6, 1fr); gap: 4px; margin-top: 14px; max-width: 400px;"></div>
+
+      <table style="width:100%; margin-top: 14px;">
+        <tr><th>quantity</th><th>value</th></tr>
+        <tr><td>P(sum = target)</td><td class="mono" id="ptarget">—</td></tr>
+        <tr><td>P(first die = c)</td><td class="mono" id="pcond">—</td></tr>
+        <tr><td>P(sum = target AND first = c)</td><td class="mono" id="pjoint">—</td></tr>
+        <tr><td><strong>P(sum = target | first = c)</strong></td><td class="mono" id="pcondprob">—</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-top:0">Exercises</h3>
+      <div id="exercises"></div>
+    </div>
+
+  </main>
+
+  <script>
+    Lesson.init({ id: 'day-009', day: 9, title: 'Conditional Probability', estMin: 30 });
+
+    const $ = id => document.getElementById(id);
+
+    function render() {
+      const target = parseInt($('target').value, 10);
+      const cond = $('cond').value ? parseInt($('cond').value, 10) : null;
+      const grid = $('grid');
+      grid.innerHTML = '<div></div>'; // top-left blank
+      for (let j = 1; j <= 6; j++) {
+        const h = document.createElement('div');
+        h.className = 'mono muted center';
+        h.textContent = j;
+        h.style.fontSize = '0.85rem';
+        grid.appendChild(h);
+      }
+      for (let i = 1; i <= 6; i++) {
+        const rh = document.createElement('div');
+        rh.className = 'mono muted center';
+        rh.textContent = i;
+        rh.style.fontSize = '0.85rem';
+        grid.appendChild(rh);
+        for (let j = 1; j <= 6; j++) {
+          const cell = document.createElement('div');
+          cell.textContent = i + j;
+          cell.style.textAlign = 'center';
+          cell.style.padding = '4px';
+          cell.style.borderRadius = '4px';
+          cell.style.fontFamily = 'monospace';
+          const inEvent = (i + j === target);
+          const inCond = (cond === null || i === cond);
+          if (inCond && inEvent) {
+            cell.style.background = '#6ee7a3'; cell.style.color = '#0a0d12';
+          } else if (inEvent) {
+            cell.style.background = 'rgba(110, 231, 163, 0.18)'; cell.style.color = 'var(--good)';
+          } else if (inCond) {
+            cell.style.background = 'var(--panel)'; cell.style.color = 'var(--text)';
+          } else {
+            cell.style.background = 'transparent'; cell.style.color = 'var(--muted)'; cell.style.opacity = '0.4';
+          }
+          grid.appendChild(cell);
+        }
+      }
+      // stats
+      const total = 36;
+      let nEvent = 0, nCond = 0, nBoth = 0;
+      for (let i = 1; i <= 6; i++) for (let j = 1; j <= 6; j++) {
+        const e = (i + j === target);
+        const c = (cond === null || i === cond);
+        if (e) nEvent++;
+        if (c) nCond++;
+        if (e && c) nBoth++;
+      }
+      $('ptarget').textContent = `${nEvent}/36 = ${(nEvent/total).toFixed(4)}`;
+      $('pcond').textContent = `${nCond}/36 = ${(nCond/total).toFixed(4)}`;
+      $('pjoint').textContent = `${nBoth}/36 = ${(nBoth/total).toFixed(4)}`;
+      $('pcondprob').textContent = nCond
+        ? `${nBoth}/${nCond} = ${(nBoth/nCond).toFixed(4)}`
+        : '—';
+    }
+    ['target', 'cond'].forEach(id => $(id).addEventListener('input', render));
+    render();
+
+    Exercises.render($('exercises'), [
+      {
+        q: "P(A) = 0.4, P(B) = 0.5, P(A ∩ B) = 0.2. What is P(A | B)?",
+        type: 'numeric', answer: 0.4, tol: 0.01,
+        explain: 'P(A|B) = P(A∩B) / P(B) = 0.2 / 0.5 = 0.4. Interestingly, P(A|B) = P(A) here — these events are independent.',
+      },
+      {
+        q: "Two events with P(A) > 0 and P(B) > 0 are DISJOINT. Are they independent?",
+        type: 'mcq',
+        options: [
+          'Yes, always.',
+          'No — disjoint events with positive probability are dependent.',
+          'Sometimes, depending on P(A) and P(B).',
+          'Only if P(A) = P(B).',
+        ],
+        answer: 1,
+        explain: 'Disjoint with positive probability: P(A ∩ B) = 0, but P(A)·P(B) > 0. So P(A∩B) ≠ P(A)P(B) — they are dependent. Knowing B happened tells you A did NOT happen. Maximum dependence, not independence.',
+      },
+      {
+        q: "Roll a die. A = 'roll is even', B = 'roll ≥ 4'. P(A | B) = ?",
+        type: 'numeric', answer: 0.6667, tol: 0.01,
+        explain: 'B = {4,5,6}, so |B| = 3. A ∩ B = {4, 6}, so |A∩B| = 2. P(A|B) = 2/3 ≈ 0.667.',
+      },
+      {
+        q: "A test detects a disease with 99% accuracy. The disease has prevalence 1%. You test positive. Approximately P(have disease | positive)?",
+        type: 'mcq',
+        options: ['~99%', '~75%', '~50%', '~25%'],
+        answer: 2,
+        explain: 'About 50%. P(disease|positive) = P(positive|disease) × P(disease) / P(positive). With base rate 1% and false-positive rate 1%, the positive rate is ~2%, and only half of positives are true positives. This is the canonical Bayes-trap — Day 10 derives it carefully.',
+      },
+      {
+        q: "P(rain | dark clouds) is HIGH. What can you say about P(dark clouds | rain)?",
+        type: 'mcq',
+        options: [
+          'It must also be HIGH.',
+          'It must be LOW.',
+          'It could be anything — these are different quantities.',
+          'It equals 1 minus P(rain | dark clouds).',
+        ],
+        answer: 2,
+        explain: 'P(A|B) and P(B|A) are different quantities related by Bayes\' theorem. The asymmetry depends on the base rates of A and B. Conflating them is the prosecutor\'s fallacy.',
+      },
+    ]);
+  </script>
+</body>
+</html>
