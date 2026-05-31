@@ -3,65 +3,127 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Math Journey — Lesson Hub</title>
+  <title>Math Journey — Daily Hub</title>
   <link rel="stylesheet" href="styles.css" />
+  <script src="assets/lesson.js"></script>
 </head>
 <body>
   <main class="container">
     <h1>Math Journey</h1>
-    <p class="tagline">Rebuilding math fluency, from arithmetic to MSc-level intuition. Interactive lessons, in your browser, no install.</p>
+    <p class="tagline">Daily applied math — 45 minutes, in your browser.</p>
 
-    <p>
-      Start with the <a href="README.md">README</a> and the <a href="ROADMAP.md">full roadmap</a>.
-      The phase plans go from <a href="PHASE-0-arithmetic.md">Phase 0 (arithmetic)</a> through
-      <a href="PHASE-5-lifelong.md">Phase 5 (lifelong practice)</a>.
-    </p>
-
-    <h2>Lessons</h2>
-    <p class="muted">These are starter lessons demonstrating the format. More to come — add your own as you learn each topic.</p>
-
-    <div class="grid">
-
-      <div class="card">
-        <a href="lessons/arithmetic-drill.html">
-          <div class="meta"><span class="phase-pill">Phase 0</span> mental math</div>
-          <h3>Arithmetic drill</h3>
-          <p class="desc">Daily 5–10 minute mental-math reps with adjustable difficulty. The single most important habit in this curriculum.</p>
-        </a>
+    <div class="panel">
+      <div class="row" style="justify-content: space-between;">
+        <div class="row" style="gap: 18px;">
+          <span class="streak-flame" id="streak">🔥 0 day streak</span>
+          <span class="mono muted">completed <span id="totalDone">0</span> / <span id="totalAll">30</span> · <span id="pct">0%</span></span>
+        </div>
+        <button class="secondary" id="resetBtn">reset progress</button>
       </div>
-
-      <div class="card">
-        <a href="lessons/linear-algebra-transformations.html">
-          <div class="meta"><span class="phase-pill">Phase 1</span> linear algebra</div>
-          <h3>2×2 matrix as a transformation</h3>
-          <p class="desc">Type a matrix, watch the plane warp. Determinant, eigenvectors, presets — the 3Blue1Brown view, interactively.</p>
-        </a>
-      </div>
-
-      <div class="card">
-        <a href="lessons/lp-visualizer.html">
-          <div class="meta"><span class="phase-pill">Phase 2</span> optimization</div>
-          <h3>Linear &amp; integer programming</h3>
-          <p class="desc">A 2D LP you can poke. Drag constraints, change the objective, toggle integer mode and see the MILP/LP gap.</p>
-        </a>
-      </div>
-
+      <div class="progress-bar"><div class="fill" id="progFill" style="width:0%"></div></div>
     </div>
 
-    <h2>How to contribute a lesson</h2>
-    <p>
-      Every lesson is a single self-contained HTML file in <code class="mono">lessons/</code> that links
-      <code class="mono">../styles.css</code>. No build step, no frameworks. The pattern is:
-    </p>
-    <ol>
-      <li>One concept per lesson.</li>
-      <li>A picture (canvas or SVG) at the top.</li>
-      <li>Controls (sliders, inputs, buttons) that visibly change the picture.</li>
-      <li>A short explanation underneath — enough to read in five minutes.</li>
-      <li>Self-test or self-check at the bottom.</li>
-    </ol>
-    <p>Copy any existing lesson as a template. Open it in your browser to iterate. Push to git. Done.</p>
+    <div class="panel">
+      <h3 style="margin-top:0">Your daily routine</h3>
+      <ol>
+        <li><strong>10 min — arithmetic drill</strong> <a href="lessons/arithmetic-drill.html">→ open drill</a></li>
+        <li><strong>30 min — today's lesson</strong> (below)</li>
+        <li><strong>Click "mark today complete"</strong> at the bottom of the lesson</li>
+      </ol>
+      <p class="muted">Total: ~40–45 min. Same time every day. No exceptions in the first 30 days.</p>
+    </div>
 
+    <h2>Today's lesson</h2>
+    <div id="todayCard"></div>
+
+    <h2>Month 1 — Week 1: Restart the engine</h2>
+    <div class="day-list" id="weekList"></div>
+
+    <h2>The full curriculum</h2>
+    <p>
+      <a href="CURRICULUM.md">Month-by-month plan</a> ·
+      <a href="ROADMAP.md">Long-arc roadmap</a> (Phases 0–5) ·
+      <a href="README.md">README</a>
+    </p>
+
+    <h2>Standalone tools</h2>
+    <div class="grid">
+      <div class="card"><a href="lessons/arithmetic-drill.html">
+        <div class="meta">DAILY · 10 min</div>
+        <h3>Arithmetic drill</h3>
+        <p class="desc">Mental math reps with adjustable difficulty. Do this every day, forever.</p>
+      </a></div>
+      <div class="card"><a href="lessons/linear-algebra-transformations.html">
+        <div class="meta">REFERENCE</div>
+        <h3>Matrix transformations</h3>
+        <p class="desc">2×2 matrix as a warping of the plane. Used in Day 4.</p>
+      </a></div>
+      <div class="card"><a href="lessons/lp-visualizer.html">
+        <div class="meta">REFERENCE</div>
+        <h3>LP / MILP visualizer</h3>
+        <p class="desc">2-variable optimization with an integer-toggle. Used in Month 2.</p>
+      </a></div>
+    </div>
   </main>
+
+  <script>
+    const lessons = [
+      { day: 1, id: 'day-001', title: 'Fermi estimation', file: 'lessons/day-001-fermi.html', est: 25 },
+      { day: 2, id: 'day-002', title: 'Percentages, ratios, growth', file: 'lessons/day-002-percentages.html', est: 25 },
+      { day: 3, id: 'day-003', title: 'Vectors as arrows', file: 'lessons/day-003-vectors.html', est: 30 },
+      { day: 4, id: 'day-004', title: 'Matrices as transformations', file: 'lessons/day-004-matrices.html', est: 30 },
+      { day: 5, id: 'day-005', title: 'Summary statistics — when each lies', file: 'lessons/day-005-summary-stats.html', est: 30 },
+      { day: 6, id: 'day-006', title: 'The shape of randomness', file: 'lessons/day-006-distributions.html', est: 30 },
+      { day: 7, id: 'day-007', title: 'Your first real estimate', file: 'lessons/day-007-estimate.html', est: 35 },
+    ];
+
+    function render() {
+      const done = lessons.filter(l => Progress.isCompleted(l.id)).length;
+      const next = lessons.find(l => !Progress.isCompleted(l.id)) || lessons[lessons.length - 1];
+
+      document.getElementById('streak').textContent = `🔥 ${Progress.streak()} day streak`;
+      document.getElementById('totalDone').textContent = done;
+      document.getElementById('totalAll').textContent = lessons.length;
+      const pct = Math.round(100 * done / lessons.length);
+      document.getElementById('pct').textContent = pct + '%';
+      document.getElementById('progFill').style.width = pct + '%';
+
+      // today's lesson big card
+      document.getElementById('todayCard').innerHTML = `
+        <div class="panel" style="border-left: 3px solid var(--accent);">
+          <div class="row" style="justify-content: space-between;">
+            <div>
+              <div class="meta mono muted">DAY ${next.day} · ${next.est} MIN ${Progress.isCompleted(next.id) ? '· ✓ done — curriculum extends here' : ''}</div>
+              <h3 style="margin:6px 0;">${next.title}</h3>
+            </div>
+            <a href="${next.file}"><button>${Progress.isCompleted(next.id) ? 'review' : 'start lesson →'}</button></a>
+          </div>
+        </div>
+      `;
+
+      // week list
+      document.getElementById('weekList').innerHTML = lessons.map(l => {
+        const isDone = Progress.isCompleted(l.id);
+        const isCurrent = l.id === next.id && !isDone;
+        const cls = isDone ? 'day-card done' : (isCurrent ? 'day-card current' : 'day-card');
+        const status = isDone ? '✓' : (isCurrent ? '← today' : '');
+        return `
+          <div class="${cls}">
+            <span class="day-num">D${String(l.day).padStart(2, '0')}</span>
+            <a href="${l.file}"><strong>${l.title}</strong> <span class="muted mono">· ${l.est} min</span></a>
+            <span class="mono ${isDone ? 'score' : 'muted'}">${status}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      Progress.reset();
+    });
+
+    render();
+    // re-render if user comes back from a lesson
+    window.addEventListener('focus', render);
+  </script>
 </body>
 </html>
